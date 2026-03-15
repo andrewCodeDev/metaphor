@@ -1,6 +1,12 @@
 /*
  * nn/selective_scan.cu - Fused selective scan (SSM recurrence) forward and backward
  *
+ * Based on the Mamba selective scan from:
+ *   Albert Gu and Tri Dao, "Mamba: Linear-Time Sequence Modeling
+ *   with Selective State Spaces", 2023
+ *   https://github.com/state-spaces/mamba
+ *   Licensed under Apache 2.0
+ *
  * Computes the linear recurrence:
  *   h[t] = a_bar[t] * h[t-1] + b_bar_x[t]
  *

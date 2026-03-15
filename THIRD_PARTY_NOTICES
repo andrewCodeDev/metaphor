@@ -142,6 +142,54 @@ POSSIBILITY OF SUCH DAMAGE.
 
 ===============================================================================
 
+License notice for Mamba (selective scan, causal conv1d, SSD chunk scan)
+https://github.com/state-spaces/mamba
+
+Ported and modified source in:
+  src/hip/nn/selective_scan.cpp
+  src/hip/nn/causal_conv1d.cpp
+  src/hip/nn/ssd_chunk_scan.cpp
+  src/cuda/nn/selective_scan.cu
+  src/cuda/nn/causal_conv1d.cu
+  src/cuda/nn/ssd_chunk_scan.cu
+
+Copyright (c) 2023 Albert Gu and Tri Dao
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+===============================================================================
+
+License notice for HuggingFace Tokenizers (BPE tokenizer)
+https://github.com/huggingface/tokenizers
+
+Ported and modified source in src/tokenizers/bpe.c3
+
+Copyright (c) 2021 HuggingFace Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+===============================================================================
+
 Credit notice for hashbrown (SwissTable)
 https://github.com/rust-lang/hashbrown
 

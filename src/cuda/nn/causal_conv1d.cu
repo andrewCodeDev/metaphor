@@ -1,6 +1,12 @@
 /*
  * nn/causal_conv1d.cu - Depthwise causal 1D convolution forward and backward
  *
+ * Based on the causal conv1d from the Mamba architecture:
+ *   Albert Gu and Tri Dao, "Mamba: Linear-Time Sequence Modeling
+ *   with Selective State Spaces", 2023
+ *   https://github.com/state-spaces/mamba
+ *   Licensed under Apache 2.0
+ *
  * Computes depthwise causal conv1d (cross-correlation, no kernel flip):
  *   out[b,e,t] = bias[e] + sum_{k=0}^{K-1} weight[e,0,k] * x[b,e,t-(K-1)+k]
  *
