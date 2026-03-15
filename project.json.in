@@ -1,0 +1,121 @@
+{
+    "langrev": "1",
+    "version": "0.1.0",
+    "authors": ["Andrew"],
+    "sources": [@METAPHOR_SOURCES@],
+    "c-sources": ["src/utils/cjson/cJSON.c"],
+    "test-sources": [@METAPHOR_TEST_SOURCES@],
+    "output": "build",
+    "features": [@METAPHOR_FEATURES@],
+    "linked-libraries": [@METAPHOR_LINKED_LIBS@],
+    "linker-search-paths": [@METAPHOR_LINKER_PATHS@],
+    "link-args": [@METAPHOR_LINK_ARGS@],
+    "opt": "@METAPHOR_OPT@",
+    "debug-info": "@METAPHOR_DEBUG_INFO@",
+    "targets": {
+        "metaphor": {
+            "type": "static-lib"
+        },
+        "mnist_cuda": {
+            "type": "executable",
+            "sources": [@METAPHOR_SOURCES@, "src/device/cuda_device/**", "examples/mnist_cuda.c3"]
+        },
+        "mnist_hip": {
+            "type": "executable",
+            "sources": [@METAPHOR_SOURCES@, "src/device/hip_device/**", "examples/mnist_hip.c3"]
+        },
+        "test_rope": {
+            "type": "executable",
+            "sources": [@METAPHOR_SOURCES@, "src/device/hip_device/**", "examples/test_rope.c3"],
+            "features": [@METAPHOR_FEATURES@],
+            "linked-libraries": [@METAPHOR_LINKED_LIBS@],
+            "linker-search-paths": [@METAPHOR_LINKER_PATHS@]
+        },
+        "test_prefill": {
+            "type": "executable",
+            "sources": [@METAPHOR_SOURCES@, "src/device/hip_device/**", "examples/test_prefill.c3"],
+            "features": [@METAPHOR_FEATURES@],
+            "linked-libraries": [@METAPHOR_LINKED_LIBS@],
+            "linker-search-paths": [@METAPHOR_LINKER_PATHS@]
+        },
+        "llama_generate": {
+            "type": "executable",
+            "sources": [@METAPHOR_SOURCES@, "src/device/hip_device/**", "examples/llama_generate.c3"],
+            "features": [@METAPHOR_FEATURES@],
+            "linked-libraries": [@METAPHOR_LINKED_LIBS@],
+            "linker-search-paths": [@METAPHOR_LINKER_PATHS@]
+        },
+        "llama_lora_train": {
+            "type": "executable",
+            "sources": [@METAPHOR_SOURCES@, "src/device/hip_device/**", "examples/llama.c3", "examples/llama_lora_train.c3"],
+            "features": [@METAPHOR_FEATURES@],
+            "linked-libraries": [@METAPHOR_LINKED_LIBS@],
+            "linker-search-paths": [@METAPHOR_LINKER_PATHS@]
+        },
+        "llama_chat": {
+            "type": "executable",
+            "sources": [@METAPHOR_SOURCES@, "src/device/hip_device/**", "examples/llama_generate.c3", "examples/llama_chat.c3"],
+            "features": [@METAPHOR_FEATURES@, "LLAMA_CHAT_MODE"],
+            "linked-libraries": [@METAPHOR_LINKED_LIBS@],
+            "linker-search-paths": [@METAPHOR_LINKER_PATHS@]
+        },
+        "llama_server": {
+            "type": "executable",
+            "sources": [@METAPHOR_SOURCES@, "src/device/hip_device/**", "examples/llama_generate.c3", "examples/llama_server.c3"],
+            "features": [@METAPHOR_FEATURES@, "LLAMA_SERVER_MODE"],
+            "linked-libraries": [@METAPHOR_LINKED_LIBS@],
+            "linker-search-paths": [@METAPHOR_LINKER_PATHS@]
+        },
+        "llama_debug": {
+            "type": "executable",
+            "sources": [@METAPHOR_SOURCES@, "src/device/hip_device/**", "examples/llama_debug.c3"],
+            "features": [@METAPHOR_FEATURES@],
+            "linked-libraries": [@METAPHOR_LINKED_LIBS@],
+            "linker-search-paths": [@METAPHOR_LINKER_PATHS@]
+        },
+        "cuda_tests": {
+            "type": "executable",
+            "sources": [@METAPHOR_SOURCES@, "src/device/cuda_device/**", "testing/device/cuda_device/**"]
+        },
+        "hip_tests": {
+            "type": "executable",
+            "sources": [@METAPHOR_SOURCES@, "src/device/hip_device/**", "testing/device/hip_device/**"]
+        },
+        "mamba_overfit": {
+            "type": "executable",
+            "sources": [@METAPHOR_SOURCES@, "examples/mamba_overfit.c3"]
+        },
+        "mamba_overfit_cuda": {
+            "type": "executable",
+            "sources": [@METAPHOR_SOURCES@, "src/device/cuda_device/**", "examples/mamba_overfit_cuda.c3"]
+        },
+        "mamba_generate": {
+            "type": "executable",
+            "sources": [@METAPHOR_SOURCES@, "examples/mamba_generate.c3"],
+            "features": [@METAPHOR_FEATURES@],
+            "linked-libraries": [@METAPHOR_LINKED_LIBS@],
+            "linker-search-paths": [@METAPHOR_LINKER_PATHS@]
+        },
+        "mamba": {
+            "type": "executable",
+            "sources": [@METAPHOR_SOURCES@, "examples/mamba.c3", "examples/mamba_train.c3"],
+            "features": [@METAPHOR_FEATURES@],
+            "linked-libraries": [@METAPHOR_LINKED_LIBS@],
+            "linker-search-paths": [@METAPHOR_LINKER_PATHS@]
+        },
+        "mamba_lora_train": {
+            "type": "executable",
+            "sources": [@METAPHOR_SOURCES@, "examples/mamba.c3", "examples/mamba_lora_train.c3"],
+            "features": [@METAPHOR_FEATURES@],
+            "linked-libraries": [@METAPHOR_LINKED_LIBS@],
+            "linker-search-paths": [@METAPHOR_LINKER_PATHS@]
+        },
+        "mamba_lora_train_capture": {
+            "type": "executable",
+            "sources": [@METAPHOR_SOURCES@, "examples/mamba.c3", "examples/mamba_lora_train_capture.c3"],
+            "features": [@METAPHOR_FEATURES@],
+            "linked-libraries": [@METAPHOR_LINKED_LIBS@],
+            "linker-search-paths": [@METAPHOR_LINKER_PATHS@]
+        }
+    }
+}

@@ -1,0 +1,7 @@
+# Default Persistence Mode
+
+Every graph has a default persistence setting that controls the fate of intermediate tensors when they enter the execution sequence. This setting determines whether the system defaults to aggressive memory reclamation or conservative data retention.
+
+In unstable mode, which is the default, intermediates are freed after their last consumer finishes. The user opts in to saving specific tensors that must survive across execution boundaries. This minimizes peak memory at the cost of recomputation when the backward pass needs forward activations that were already freed. In stable mode, intermediates are preserved indefinitely. The user opts in to freeing tensors that are safe to discard. This eliminates recomputation and works naturally for stateful models where caches and hidden states must persist between steps, but holds all intermediates in memory simultaneously.
+
+User overrides always take precedence over the default. Explicitly marking a tensor as stable or unstable prevents auto-promotion regardless of the graph's default mode. Subgraphs inherit the default persistence from their parent. Both modes produce identical numerical results and the choice is purely a memory-versus-compute tradeoff. Unstable mode is the safe default because it cannot cause out-of-memory errors from forgotten annotations, while stable mode requires understanding the memory budget.

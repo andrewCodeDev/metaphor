@@ -1,0 +1,7 @@
+# Checkpointing and Liveness
+
+Training requires forward activations to be available during the backward pass for gradient computation, which can consume memory proportional to model depth. Metaphor addresses this with three complementary mechanisms.
+
+Fingerprint-based staleness detection ensures correctness across training steps. Each execution unit tracks a fingerprint derived from its leaf dependencies. When leaf data changes between steps, the fingerprint mismatches and downstream units re-execute rather than returning stale cached values. Liveness tracking operates within a single collection call, automatically freeing intermediate tensors as soon as all their consumers have finished executing. This prevents memory spikes from accumulating unused intermediates during a pass without requiring any user intervention.
+
+The third mechanism is explicit gradient checkpointing through manual data release. The user frees a tensor's data after its forward computation completes, signaling that the system should recompute it from its sources when the backward pass needs it. This trades compute for memory: instead of holding all layer activations simultaneously, only one layer's working set is in memory at a time. The user controls this tradeoff by choosing where to place data release calls. Together, these three mechanisms achieve near-theoretical-minimum memory usage while maintaining correct training dynamics.

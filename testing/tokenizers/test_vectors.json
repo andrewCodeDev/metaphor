@@ -1,0 +1,228 @@
+[
+  {
+    "index": 0,
+    "text": "hello",
+    "token_ids": [
+      25521
+    ],
+    "num_tokens": 1
+  },
+  {
+    "index": 1,
+    "text": "Hello, world!",
+    "token_ids": [
+      12092,
+      13,
+      1533,
+      2
+    ],
+    "num_tokens": 4
+  },
+  {
+    "index": 2,
+    "text": "The quick brown fox jumps over the lazy dog.",
+    "token_ids": [
+      510,
+      3158,
+      8516,
+      30013,
+      27287,
+      689,
+      253,
+      22658,
+      4370,
+      15
+    ],
+    "num_tokens": 10
+  },
+  {
+    "index": 3,
+    "text": "def fibonacci(n):\n    if n <= 1:\n        return n\n    return fibonacci(n-1) + fibonacci(n-2)",
+    "token_ids": [
+      1545,
+      5713,
+      251,
+      42401,
+      9,
+      79,
+      2262,
+      187,
+      50274,
+      338,
+      295,
+      11049,
+      337,
+      27,
+      187,
+      50270,
+      2309,
+      295,
+      187,
+      50274,
+      2309,
+      5713,
+      251,
+      42401,
+      9,
+      79,
+      14,
+      18,
+      10,
+      559,
+      5713,
+      251,
+      42401,
+      9,
+      79,
+      14,
+      19,
+      10
+    ],
+    "num_tokens": 38
+  },
+  {
+    "index": 4,
+    "text": "Question: What is 2+2?\nAnswer: 4\n<END>",
+    "token_ids": [
+      23433,
+      27,
+      1737,
+      310,
+      374,
+      12,
+      19,
+      32,
+      187,
+      32869,
+      27,
+      577,
+      187,
+      29,
+      8112,
+      31
+    ],
+    "num_tokens": 16
+  },
+  {
+    "index": 5,
+    "text": "Python:\nprint('hello world')\n<END>",
+    "token_ids": [
+      27363,
+      27,
+      187,
+      3845,
+      2073,
+      25521,
+      1533,
+      3401,
+      187,
+      29,
+      8112,
+      31
+    ],
+    "num_tokens": 12
+  },
+  {
+    "index": 6,
+    "text": " leading space",
+    "token_ids": [
+      4283,
+      2317
+    ],
+    "num_tokens": 2
+  },
+  {
+    "index": 7,
+    "text": "tabs\there",
+    "token_ids": [
+      33754,
+      186,
+      1568
+    ],
+    "num_tokens": 3
+  },
+  {
+    "index": 8,
+    "text": "newlines\n\n\nmultiple",
+    "token_ids": [
+      1826,
+      8737,
+      535,
+      187,
+      34263
+    ],
+    "num_tokens": 5
+  },
+  {
+    "index": 9,
+    "text": "",
+    "token_ids": [],
+    "num_tokens": 0
+  },
+  {
+    "index": 10,
+    "text": "a",
+    "token_ids": [
+      66
+    ],
+    "num_tokens": 1
+  },
+  {
+    "index": 11,
+    "text": "   ",
+    "token_ids": [
+      50275
+    ],
+    "num_tokens": 1
+  },
+  {
+    "index": 12,
+    "text": "!@#$%^&*()",
+    "token_ids": [
+      2,
+      33,
+      4,
+      5,
+      6,
+      63,
+      7,
+      11,
+      1082
+    ],
+    "num_tokens": 9
+  },
+  {
+    "index": 13,
+    "text": "caf\u00e9 r\u00e9sum\u00e9 na\u00efve",
+    "token_ids": [
+      68,
+      2320,
+      860,
+      9568,
+      2204,
+      860,
+      36060
+    ],
+    "num_tokens": 7
+  },
+  {
+    "index": 14,
+    "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "token_ids": [
+      34576,
+      34576,
+      34576,
+      34576,
+      34576,
+      34576,
+      34576,
+      34576,
+      34576,
+      34576,
+      34576,
+      34576,
+      16321
+    ],
+    "num_tokens": 13
+  }
+]

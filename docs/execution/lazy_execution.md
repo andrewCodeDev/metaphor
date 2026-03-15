@@ -1,0 +1,7 @@
+# Lazy Execution
+
+All operations in Metaphor defer execution. No operation produces data at registration time. Instead, each operation records a semantic description into the symbolic chain map, capturing what to compute without committing to how. Data materializes only upon explicit collection.
+
+The graph stores operations as canonical semantic payloads covering einsum-style contractions, reductions, broadcasts, element-wise maps, structural transformations, and device transfers. Implementation details such as library selection, fusion boundaries, tiling, and memory planning are decided by the device at dispatch time. This separation allows the same graph to run on different backends with device-appropriate implementations, and enables the compiler to see the full computation structure before generating any code.
+
+Collection triggers a compile-then-execute path. If the target tensor has no compiled execution unit, the device compiler produces one from the symbolic subgraph. Execution proceeds via depth-first post-order traversal of dependencies, correctly handling diamond patterns and automatically reclaiming intermediate memory through reference counting. The persistence model controls which tensors are compilation boundaries and how long their data survives: fusable tensors can be computed inline within a consumer's kernel, while boundary tensors must be materialized separately. A single execution model is used for both forward and backward passes, with no distinction between debug and production code paths.

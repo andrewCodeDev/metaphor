@@ -1,0 +1,55 @@
+# C3 build artifacts
+build/
+*.o
+
+# Editor config
+.vscode/
+.claude/
+CLAUDE.md
+
+# CMake build artifacts (CUDA)
+cmake-build/
+build_cuda/
+
+# JIT kernel cache headers
+headers/
+
+# Dataset files
+data/
+examples/mnist/data/
+examples/cifar10/data/
+
+# Reference/debug artifacts
+*.npz
+debug_test.c3
+
+# Compiled binaries (root)
+testrun
+tokenizer_compare
+slice_test*
+check_sizes
+
+# Old Zig build cache
+src/cuda/.zig-cache/
+
+# Python virtual environments and artifacts
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+dist/
+
+# Reference implementations (Python scripts for comparison)
+reference/
+
+# Test artifacts
+comparison_report.json
+
+# Model files
+models/
+*.safetensors
+*.stz

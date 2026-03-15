@@ -1,0 +1,1 @@
+/usr/bin/g++ -fPIC -s -shared -Wl,-soname,libmetaphor_cuda.so -o lib/libmetaphor_cuda.so @CMakeFiles/metaphor_cuda.dir/objects1.rsp @CMakeFiles/metaphor_cuda.dir/linkLibs.rsp -L"/usr/local/cuda/targets/x86_64-linux/lib/stubs" -L"/usr/local/cuda/targets/x86_64-linux/lib"

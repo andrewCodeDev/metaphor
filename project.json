@@ -1,0 +1,121 @@
+{
+    "langrev": "1",
+    "version": "0.1.0",
+    "authors": ["Andrew"],
+    "sources": ["src/*", "src/cas/**", "src/codegen/**", "src/device/*", "src/device/common/**", "src/device/host_device/**", "src/graph/**", "src/mem/**", "src/nn/**", "src/tensor/**", "src/testing/**", "src/tokenizers/**", "src/utils/**", "src/device/hip_device/**"],
+    "c-sources": ["src/utils/cjson/cJSON.c"],
+    "test-sources": ["testing/*", "testing/cas/**", "testing/device/*", "testing/device/common/**", "testing/device/host_device/**", "testing/graph/**", "testing/host/**", "testing/tensor/**", "testing/tokenizers/**", "testing/utils/**", "testing/device/hip_device/**"],
+    "output": "build",
+    "features": ["ENABLE_HIP", "HOST_BLAS_MKL", "ENABLE_SORT"],
+    "linked-libraries": ["mkl_rt", "metaphor_hip"],
+    "linker-search-paths": ["/home/andrew/migration/metaphor/build/lib", "/opt/rocm/lib"],
+    "link-args": ["-Wl,--disable-new-dtags", "-Wl,-rpath,/home/andrew/migration/metaphor/build/lib", "-Wl,-rpath,/opt/rocm/lib", "-Wl,--no-as-needed"],
+    "opt": "O3",
+    "debug-info": "none",
+    "targets": {
+        "metaphor": {
+            "type": "static-lib"
+        },
+        "mnist_cuda": {
+            "type": "executable",
+            "sources": ["src/*", "src/cas/**", "src/codegen/**", "src/device/*", "src/device/common/**", "src/device/host_device/**", "src/graph/**", "src/mem/**", "src/nn/**", "src/tensor/**", "src/testing/**", "src/tokenizers/**", "src/utils/**", "src/device/hip_device/**", "src/device/cuda_device/**", "examples/mnist_cuda.c3"]
+        },
+        "mnist_hip": {
+            "type": "executable",
+            "sources": ["src/*", "src/cas/**", "src/codegen/**", "src/device/*", "src/device/common/**", "src/device/host_device/**", "src/graph/**", "src/mem/**", "src/nn/**", "src/tensor/**", "src/testing/**", "src/tokenizers/**", "src/utils/**", "src/device/hip_device/**", "src/device/hip_device/**", "examples/mnist_hip.c3"]
+        },
+        "test_rope": {
+            "type": "executable",
+            "sources": ["src/*", "src/cas/**", "src/codegen/**", "src/device/*", "src/device/common/**", "src/device/host_device/**", "src/graph/**", "src/mem/**", "src/nn/**", "src/tensor/**", "src/testing/**", "src/tokenizers/**", "src/utils/**", "src/device/hip_device/**", "src/device/hip_device/**", "examples/test_rope.c3"],
+            "features": ["ENABLE_HIP", "HOST_BLAS_MKL", "ENABLE_SORT"],
+            "linked-libraries": ["mkl_rt", "metaphor_hip"],
+            "linker-search-paths": ["/home/andrew/migration/metaphor/build/lib", "/opt/rocm/lib"]
+        },
+        "test_prefill": {
+            "type": "executable",
+            "sources": ["src/*", "src/cas/**", "src/codegen/**", "src/device/*", "src/device/common/**", "src/device/host_device/**", "src/graph/**", "src/mem/**", "src/nn/**", "src/tensor/**", "src/testing/**", "src/tokenizers/**", "src/utils/**", "src/device/hip_device/**", "src/device/hip_device/**", "examples/test_prefill.c3"],
+            "features": ["ENABLE_HIP", "HOST_BLAS_MKL", "ENABLE_SORT"],
+            "linked-libraries": ["mkl_rt", "metaphor_hip"],
+            "linker-search-paths": ["/home/andrew/migration/metaphor/build/lib", "/opt/rocm/lib"]
+        },
+        "llama_generate": {
+            "type": "executable",
+            "sources": ["src/*", "src/cas/**", "src/codegen/**", "src/device/*", "src/device/common/**", "src/device/host_device/**", "src/graph/**", "src/mem/**", "src/nn/**", "src/tensor/**", "src/testing/**", "src/tokenizers/**", "src/utils/**", "src/device/hip_device/**", "src/device/hip_device/**", "examples/llama_generate.c3"],
+            "features": ["ENABLE_HIP", "HOST_BLAS_MKL", "ENABLE_SORT"],
+            "linked-libraries": ["mkl_rt", "metaphor_hip"],
+            "linker-search-paths": ["/home/andrew/migration/metaphor/build/lib", "/opt/rocm/lib"]
+        },
+        "llama_lora_train": {
+            "type": "executable",
+            "sources": ["src/*", "src/cas/**", "src/codegen/**", "src/device/*", "src/device/common/**", "src/device/host_device/**", "src/graph/**", "src/mem/**", "src/nn/**", "src/tensor/**", "src/testing/**", "src/tokenizers/**", "src/utils/**", "src/device/hip_device/**", "src/device/hip_device/**", "examples/llama.c3", "examples/llama_lora_train.c3"],
+            "features": ["ENABLE_HIP", "HOST_BLAS_MKL", "ENABLE_SORT"],
+            "linked-libraries": ["mkl_rt", "metaphor_hip"],
+            "linker-search-paths": ["/home/andrew/migration/metaphor/build/lib", "/opt/rocm/lib"]
+        },
+        "llama_chat": {
+            "type": "executable",
+            "sources": ["src/*", "src/cas/**", "src/codegen/**", "src/device/*", "src/device/common/**", "src/device/host_device/**", "src/graph/**", "src/mem/**", "src/nn/**", "src/tensor/**", "src/testing/**", "src/tokenizers/**", "src/utils/**", "src/device/hip_device/**", "src/device/hip_device/**", "examples/llama_generate.c3", "examples/llama_chat.c3"],
+            "features": ["ENABLE_HIP", "HOST_BLAS_MKL", "ENABLE_SORT", "LLAMA_CHAT_MODE"],
+            "linked-libraries": ["mkl_rt", "metaphor_hip"],
+            "linker-search-paths": ["/home/andrew/migration/metaphor/build/lib", "/opt/rocm/lib"]
+        },
+        "llama_server": {
+            "type": "executable",
+            "sources": ["src/*", "src/cas/**", "src/codegen/**", "src/device/*", "src/device/common/**", "src/device/host_device/**", "src/graph/**", "src/mem/**", "src/nn/**", "src/tensor/**", "src/testing/**", "src/tokenizers/**", "src/utils/**", "src/device/hip_device/**", "src/device/hip_device/**", "examples/llama_generate.c3", "examples/llama_server.c3"],
+            "features": ["ENABLE_HIP", "HOST_BLAS_MKL", "ENABLE_SORT", "LLAMA_SERVER_MODE"],
+            "linked-libraries": ["mkl_rt", "metaphor_hip"],
+            "linker-search-paths": ["/home/andrew/migration/metaphor/build/lib", "/opt/rocm/lib"]
+        },
+        "llama_debug": {
+            "type": "executable",
+            "sources": ["src/*", "src/cas/**", "src/codegen/**", "src/device/*", "src/device/common/**", "src/device/host_device/**", "src/graph/**", "src/mem/**", "src/nn/**", "src/tensor/**", "src/testing/**", "src/tokenizers/**", "src/utils/**", "src/device/hip_device/**", "src/device/hip_device/**", "examples/llama_debug.c3"],
+            "features": ["ENABLE_HIP", "HOST_BLAS_MKL", "ENABLE_SORT"],
+            "linked-libraries": ["mkl_rt", "metaphor_hip"],
+            "linker-search-paths": ["/home/andrew/migration/metaphor/build/lib", "/opt/rocm/lib"]
+        },
+        "cuda_tests": {
+            "type": "executable",
+            "sources": ["src/*", "src/cas/**", "src/codegen/**", "src/device/*", "src/device/common/**", "src/device/host_device/**", "src/graph/**", "src/mem/**", "src/nn/**", "src/tensor/**", "src/testing/**", "src/tokenizers/**", "src/utils/**", "src/device/hip_device/**", "src/device/cuda_device/**", "testing/device/cuda_device/**"]
+        },
+        "hip_tests": {
+            "type": "executable",
+            "sources": ["src/*", "src/cas/**", "src/codegen/**", "src/device/*", "src/device/common/**", "src/device/host_device/**", "src/graph/**", "src/mem/**", "src/nn/**", "src/tensor/**", "src/testing/**", "src/tokenizers/**", "src/utils/**", "src/device/hip_device/**", "src/device/hip_device/**", "testing/device/hip_device/**"]
+        },
+        "mamba_overfit": {
+            "type": "executable",
+            "sources": ["src/*", "src/cas/**", "src/codegen/**", "src/device/*", "src/device/common/**", "src/device/host_device/**", "src/graph/**", "src/mem/**", "src/nn/**", "src/tensor/**", "src/testing/**", "src/tokenizers/**", "src/utils/**", "src/device/hip_device/**", "examples/mamba_overfit.c3"]
+        },
+        "mamba_overfit_cuda": {
+            "type": "executable",
+            "sources": ["src/*", "src/cas/**", "src/codegen/**", "src/device/*", "src/device/common/**", "src/device/host_device/**", "src/graph/**", "src/mem/**", "src/nn/**", "src/tensor/**", "src/testing/**", "src/tokenizers/**", "src/utils/**", "src/device/hip_device/**", "src/device/cuda_device/**", "examples/mamba_overfit_cuda.c3"]
+        },
+        "mamba_generate": {
+            "type": "executable",
+            "sources": ["src/*", "src/cas/**", "src/codegen/**", "src/device/*", "src/device/common/**", "src/device/host_device/**", "src/graph/**", "src/mem/**", "src/nn/**", "src/tensor/**", "src/testing/**", "src/tokenizers/**", "src/utils/**", "src/device/hip_device/**", "examples/mamba_generate.c3"],
+            "features": ["ENABLE_HIP", "HOST_BLAS_MKL", "ENABLE_SORT"],
+            "linked-libraries": ["mkl_rt", "metaphor_hip"],
+            "linker-search-paths": ["/home/andrew/migration/metaphor/build/lib", "/opt/rocm/lib"]
+        },
+        "mamba": {
+            "type": "executable",
+            "sources": ["src/*", "src/cas/**", "src/codegen/**", "src/device/*", "src/device/common/**", "src/device/host_device/**", "src/graph/**", "src/mem/**", "src/nn/**", "src/tensor/**", "src/testing/**", "src/tokenizers/**", "src/utils/**", "src/device/hip_device/**", "examples/mamba.c3", "examples/mamba_train.c3"],
+            "features": ["ENABLE_HIP", "HOST_BLAS_MKL", "ENABLE_SORT"],
+            "linked-libraries": ["mkl_rt", "metaphor_hip"],
+            "linker-search-paths": ["/home/andrew/migration/metaphor/build/lib", "/opt/rocm/lib"]
+        },
+        "mamba_lora_train": {
+            "type": "executable",
+            "sources": ["src/*", "src/cas/**", "src/codegen/**", "src/device/*", "src/device/common/**", "src/device/host_device/**", "src/graph/**", "src/mem/**", "src/nn/**", "src/tensor/**", "src/testing/**", "src/tokenizers/**", "src/utils/**", "src/device/hip_device/**", "examples/mamba.c3", "examples/mamba_lora_train.c3"],
+            "features": ["ENABLE_HIP", "HOST_BLAS_MKL", "ENABLE_SORT"],
+            "linked-libraries": ["mkl_rt", "metaphor_hip"],
+            "linker-search-paths": ["/home/andrew/migration/metaphor/build/lib", "/opt/rocm/lib"]
+        },
+        "mamba_lora_train_capture": {
+            "type": "executable",
+            "sources": ["src/*", "src/cas/**", "src/codegen/**", "src/device/*", "src/device/common/**", "src/device/host_device/**", "src/graph/**", "src/mem/**", "src/nn/**", "src/tensor/**", "src/testing/**", "src/tokenizers/**", "src/utils/**", "src/device/hip_device/**", "examples/mamba.c3", "examples/mamba_lora_train_capture.c3"],
+            "features": ["ENABLE_HIP", "HOST_BLAS_MKL", "ENABLE_SORT"],
+            "linked-libraries": ["mkl_rt", "metaphor_hip"],
+            "linker-search-paths": ["/home/andrew/migration/metaphor/build/lib", "/opt/rocm/lib"]
+        }
+    }
+}

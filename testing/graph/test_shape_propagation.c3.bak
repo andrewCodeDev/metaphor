@@ -1,0 +1,696 @@
+module metaphor::testing::graph::test_shape_propagation;
+import metaphor::graph;
+import metaphor::graph::execution_sequence;
+import metaphor::tensor;
+import metaphor::tensor::tensor_core;
+import metaphor::tensor::shape;
+import metaphor::device::host_device;
+import metaphor::device::device_reference;
+import metaphor::device::common::operations;
+import metaphor::nn::functional;
+
+alias Tensor = tensor::Tensor;
+alias DeviceReference = device_reference::DeviceReference;
+alias Shape = shape::Shape;
+
+// ============================================================================
+// Test: bind with new shape propagates through elementwise op
+// ============================================================================
+//
+// Graph: x (leaf [1,4]) + y (leaf [1,4]) → z
+// Rebind x,y as [1,8] → z should become [1,8]
+
+fn void test_elementwise_shape_propagation() @test
+{
+	host_device::HostDevice cpu;
+	cpu.init();
+	defer cpu.deinit();
+	DeviceReference dev = cpu.reference();
+
+	graph::@subgraph()
+	{
+		Tensor x = tensor::empty(F32, dev, { 1, 4 })!!;
+		Tensor y = tensor::empty(F32, dev, { 1, 4 })!!;
+		x.fill(1.0);
+		y.fill(2.0);
+
+		Tensor z = x.add(y)!!;
+
+		// First collect with shape [1,4]
+		z.collect()!!;
+
+		float val1; z.get(&val1);
+		assert(val1 == 3.0, "z[0] should be 3.0");
+		assert(z.shape().get(0) == 1, "z shape[0] should be 1");
+		assert(z.shape().get(1) == 4, "z shape[1] should be 4");
+
+		// Rebind x with different shape [1,8]
+		float[8] x_data2 = { 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0 };
+		float[8] y_data2 = { 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0 };
+		Shape new_shape = shape::shape_init({ 1, 8 });
+		x.bind(x_data2[0..], new_shape: &new_shape);
+		y.bind(y_data2[0..], new_shape: &new_shape);
+
+		// Second collect — shape should propagate
+		z.collect()!!;
+
+		// Verify output shape changed
+		assert(z.shape().get(0) == 1, "z shape[0] should be 1");
+		assert(z.shape().get(1) == 8, "z shape[1] should be 8");
+
+		float val2; z.get(&val2);
+		assert(val2 == 11.0, "z[0] should be 11.0");
+	};
+}
+
+// ============================================================================
+// Test: shape propagation through multi-layer graph
+// ============================================================================
+//
+// Graph: x (leaf [B,4]) + y (leaf [B,4]) → mid → mid + mid → out
+// Change B from 2 to 4.
+
+fn void test_multi_layer_shape_propagation() @test
+{
+	host_device::HostDevice cpu;
+	cpu.init();
+	defer cpu.deinit();
+	DeviceReference dev = cpu.reference();
+
+	graph::@subgraph()
+	{
+		Tensor x = tensor::empty(F32, dev, { 2, 4 })!!;
+		Tensor y = tensor::empty(F32, dev, { 2, 4 })!!;
+		x.fill(1.0);
+		y.fill(2.0);
+
+		Tensor mid = x.add(y)!!;         // [2,4] = 3.0
+		Tensor out = mid.add(mid)!!;      // [2,4] = 6.0
+
+		out.collect()!!;
+
+		float val1; out.get(&val1);
+		assert(val1 == 6.0, "out[0] should be 6.0");
+		assert(out.shape().get(0) == 2, "out shape[0] should be 2");
+
+		// Rebind x,y with shape [4,4]
+		float[16] x_data;
+		float[16] y_data;
+		for (usz i = 0; i < 16; i++) { x_data[i] = 5.0; y_data[i] = 3.0; }
+
+		Shape new_shape = shape::shape_init({ 4, 4 });
+		x.bind(x_data[0..], new_shape: &new_shape);
+		y.bind(y_data[0..], new_shape: &new_shape);
+
+		out.collect()!!;
+
+		// Verify shape propagated through both layers
+		assert(out.shape().get(0) == 4, "out shape[0] should be 4");
+		assert(out.shape().get(1) == 4, "out shape[1] should be 4");
+
+		float val2; out.get(&val2);
+		// (5+3) + (5+3) = 16
+		assert(val2 == 16.0, "out[0] should be 16.0");
+	};
+}
+
+// ============================================================================
+// Test: same-shape rebind still works (no reallocation needed)
+// ============================================================================
+
+fn void test_same_shape_rebind() @test
+{
+	host_device::HostDevice cpu;
+	cpu.init();
+	defer cpu.deinit();
+	DeviceReference dev = cpu.reference();
+
+	graph::@subgraph()
+	{
+		Tensor x = tensor::empty(F32, dev, { 2, 2 })!!;
+		Tensor y = tensor::empty(F32, dev, { 2, 2 })!!;
+		x.fill(1.0);
+		y.fill(2.0);
+
+		Tensor z = x.add(y)!!;
+		z.collect()!!;
+
+		float val1; z.get(&val1);
+		assert(val1 == 3.0, "z[0] should be 3.0");
+
+		// Rebind with same shape — explicit shape but no change
+		float[4] x_data2 = { 10.0, 20.0, 30.0, 40.0 };
+		Shape same_shape = shape::shape_init({ 2, 2 });
+		x.bind(x_data2[0..], new_shape: &same_shape);
+
+		z.collect()!!;
+
+		float val2; z.get(&val2);
+		assert(val2 == 12.0, "z[0] should be 12.0");
+	};
+}
+
+// ============================================================================
+// Test: GEMM shape propagation (BLAS path)
+// ============================================================================
+//
+// matmul(A[M,K], B[K,N]) → C[M,N]
+// Change M from 2 to 4.
+
+fn void test_gemm_shape_propagation() @test
+{
+	host_device::HostDevice cpu;
+	cpu.init();
+	defer cpu.deinit();
+	DeviceReference dev = cpu.reference();
+
+	graph::@subgraph()
+	{
+		// A=[2,3], B=[3,2] → C=[2,2]
+		Tensor a = tensor::empty(F32, dev, { 2, 3 })!!;
+		Tensor b = tensor::empty(F32, dev, { 3, 2 })!!;
+		a.fill(1.0);
+		b.fill(2.0);
+
+		Tensor c = a.matmul(b)!!;
+		c.collect()!!;
+
+		// C = ones(2,3) @ 2*ones(3,2) = 6*ones(2,2)
+		float val1; c.get(&val1);
+		assert(val1 == 6.0, "c[0,0] should be 6.0");
+		assert(c.shape().get(0) == 2, "c shape[0] should be 2");
+		assert(c.shape().get(1) == 2, "c shape[1] should be 2");
+
+		// Rebind A with shape [4,3] (ones)
+		float[12] a_data2;
+		for (usz i = 0; i < 12; i++) { a_data2[i] = 1.0; }
+		Shape new_a_shape = shape::shape_init({ 4, 3 });
+		a.bind(a_data2[0..], new_shape: &new_a_shape);
+
+		c.collect()!!;
+
+		// C should now be [4,2], each element = 6.0
+		assert(c.shape().get(0) == 4, "c shape[0] should be 4 after rebind");
+		assert(c.shape().get(1) == 2, "c shape[1] should be 2 after rebind");
+
+		float val2; c.get(&val2);
+		assert(val2 == 6.0, "c[0,0] should still be 6.0");
+	};
+}
+
+// ============================================================================
+// Test: shape shrink (larger → smaller)
+// ============================================================================
+
+fn void test_shape_shrink() @test
+{
+	host_device::HostDevice cpu;
+	cpu.init();
+	defer cpu.deinit();
+	DeviceReference dev = cpu.reference();
+
+	graph::@subgraph()
+	{
+		// Start large: [4,4]
+		Tensor x = tensor::empty(F32, dev, { 4, 4 })!!;
+		Tensor y = tensor::empty(F32, dev, { 4, 4 })!!;
+		x.fill(1.0);
+		y.fill(1.0);
+
+		Tensor z = x.add(y)!!;
+		z.collect()!!;
+
+		assert(z.shape().get(0) == 4, "z shape[0] should be 4");
+
+		// Shrink to [2,4]
+		float[8] x_data;
+		float[8] y_data;
+		for (usz i = 0; i < 8; i++) { x_data[i] = 5.0; y_data[i] = 5.0; }
+
+		Shape new_shape = shape::shape_init({ 2, 4 });
+		x.bind(x_data[0..], new_shape: &new_shape);
+		y.bind(y_data[0..], new_shape: &new_shape);
+
+		z.collect()!!;
+
+		assert(z.shape().get(0) == 2, "z shape[0] should be 2 after shrink");
+		assert(z.shape().get(1) == 4, "z shape[1] should be 4");
+
+		float val; z.get(&val);
+		assert(val == 10.0, "z[0] should be 10.0");
+	};
+}
+
+// ============================================================================
+// Test: REDUCE shape propagation
+// ============================================================================
+//
+// reduce("ij->i") on [B,K] → output [B]
+// Change B from 2 to 4, K from 3 to 5.
+// Proves the CAS mapper now preserves payload for REDUCE IREntries.
+
+fn void test_reduce_shape_propagation() @test
+{
+	host_device::HostDevice cpu;
+	cpu.init();
+	defer cpu.deinit();
+	DeviceReference dev = cpu.reference();
+
+	graph::@subgraph()
+	{
+		// x = [2,3] filled with 1.0 → reduce("ij->i") = [2], each elem = 3.0
+		Tensor x = tensor::empty(F32, dev, { 2, 3 })!!;
+		x.fill(1.0);
+
+		Tensor r = x.reduce("ij->i")!!;
+		r.collect()!!;
+
+		assert(r.shape().len == 1, "reduce output should be rank 1");
+		assert(r.shape().get(0) == 2, "reduce output should have 2 elements");
+		float[2] vals1;
+		r.get(vals1[0..]);
+		assert(vals1[0] == 3.0, "reduce [0] should be 3.0 (sum of 3 ones)");
+		assert(vals1[1] == 3.0, "reduce [1] should be 3.0");
+
+		// Rebind x as [4,5] filled with 2.0 → reduce = [4], each elem = 10.0
+		float[20] x_data2;
+		for (usz i = 0; i < 20; i++) { x_data2[i] = 2.0; }
+		Shape new_shape = shape::shape_init({ 4, 5 });
+		x.bind(x_data2[0..], new_shape: &new_shape);
+
+		r.collect()!!;
+
+		assert(r.shape().len == 1, "reduce output should still be rank 1");
+		assert(r.shape().get(0) == 4, "reduce output should have 4 elements after rebind");
+		float[4] vals2;
+		r.get(vals2[0..]);
+		for (usz i = 0; i < 4; i++)
+		{
+			assert(vals2[i] == 10.0, "reduce: each row sum should be 10.0 (5 * 2.0)");
+		}
+	};
+}
+
+// ============================================================================
+// Test: unary chain (MAP) shape propagation
+// ============================================================================
+//
+// Graph: x → neg → exp → out
+// Change shape from [1,4] to [1,8].
+// Proves fused element-wise chains get correct payload from CAS mapper.
+
+fn void test_unary_chain_shape_propagation() @test
+{
+	host_device::HostDevice cpu;
+	cpu.init();
+	defer cpu.deinit();
+	DeviceReference dev = cpu.reference();
+
+	graph::@subgraph()
+	{
+		Tensor x = tensor::empty(F32, dev, { 1, 4 })!!;
+		float[4] x_data1 = { 0.0, 0.0, 0.0, 0.0 };
+		x.bind(x_data1[0..]);
+
+		Tensor out = x.neg()!!.exp()!!;  // exp(-0) = 1.0
+		out.collect()!!;
+
+		assert(out.shape().get(1) == 4, "out shape[1] should be 4");
+		float val1; out.get(&val1);
+		assert(val1 == 1.0, "exp(-0) should be 1.0");
+
+		// Rebind as [1,8] of zeros → exp(-0) = 1.0 for all 8
+		float[8] x_data2 = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
+		Shape new_shape = shape::shape_init({ 1, 8 });
+		x.bind(x_data2[0..], new_shape: &new_shape);
+
+		out.collect()!!;
+
+		assert(out.shape().get(1) == 8, "out shape[1] should be 8 after rebind");
+		float[8] vals;
+		out.get(vals[0..]);
+		for (usz i = 0; i < 8; i++)
+		{
+			assert(vals[i] == 1.0, "all elements should be exp(0) = 1.0");
+		}
+	};
+}
+
+// ============================================================================
+// Test: element-wise COMBINE shape propagation
+// ============================================================================
+//
+// Graph: x * y (element-wise combine "ij,ij->ij")
+// This is a COMBINE that falls through to the fusable path (not contraction).
+// Change shape from [2,3] to [4,3].
+
+fn void test_combine_elementwise_shape_propagation() @test
+{
+	host_device::HostDevice cpu;
+	cpu.init();
+	defer cpu.deinit();
+	DeviceReference dev = cpu.reference();
+
+	graph::@subgraph()
+	{
+		Tensor x = tensor::empty(F32, dev, { 2, 3 })!!;
+		Tensor y = tensor::empty(F32, dev, { 2, 3 })!!;
+		x.fill(3.0);
+		y.fill(4.0);
+
+		Tensor out = x.mul(y)!!;  // 3*4 = 12.0
+		out.collect()!!;
+
+		assert(out.shape().get(0) == 2, "shape[0] should be 2");
+		float val1; out.get(&val1);
+		assert(val1 == 12.0, "3*4 should be 12.0");
+
+		// Rebind as [4,3]
+		float[12] x_data2;
+		float[12] y_data2;
+		for (usz i = 0; i < 12; i++) { x_data2[i] = 5.0; y_data2[i] = 7.0; }
+		Shape new_shape = shape::shape_init({ 4, 3 });
+		x.bind(x_data2[0..], new_shape: &new_shape);
+		y.bind(y_data2[0..], new_shape: &new_shape);
+
+		out.collect()!!;
+
+		assert(out.shape().get(0) == 4, "shape[0] should be 4 after rebind");
+		assert(out.shape().get(1) == 3, "shape[1] should be 3");
+		float[12] vals;
+		out.get(vals[0..]);
+		for (usz i = 0; i < 12; i++)
+		{
+			assert(vals[i] == 35.0, "5*7 should be 35.0");
+		}
+	};
+}
+
+// ============================================================================
+// Test: mixed graph — matmul + add + relu
+// ============================================================================
+//
+// Graph: C = relu(matmul(A,B) + bias)
+// A[M,K], B[K,N], bias[1,N] → out[M,N]
+// Change M from 2 to 4.
+// Proves shape propagation works across different op types in the same graph.
+
+fn void test_mixed_graph_shape_propagation() @test
+{
+	host_device::HostDevice cpu;
+	cpu.init();
+	defer cpu.deinit();
+	DeviceReference dev = cpu.reference();
+
+	graph::@subgraph()
+	{
+		Tensor a = tensor::empty(F32, dev, { 2, 3 })!!;
+		Tensor b = tensor::empty(F32, dev, { 3, 2 })!!;
+		Tensor bias = tensor::empty(F32, dev, { 2 })!!;
+		a.fill(1.0);
+		b.fill(1.0);
+		bias.fill(-2.0);
+
+		// matmul: [2,3] @ [3,2] = [2,2], all 3.0
+		// add bias: 3.0 + (-2.0) = 1.0 (bias broadcasts along rows)
+		// relu: max(0, 1.0) = 1.0
+		Tensor mm = a.matmul(b)!!;
+		Tensor added = mm.combine(bias, "ij,j->ij",
+			inner: operations::BinaryOp.ADD)!!;
+		Tensor out = added.relu()!!;
+		out.collect()!!;
+
+		assert(out.shape().get(0) == 2, "out shape[0] should be 2");
+		assert(out.shape().get(1) == 2, "out shape[1] should be 2");
+		float val1; out.get(&val1);
+		assert(val1 == 1.0, "relu(3 + (-2)) should be 1.0");
+
+		// Rebind A as [4,3], all ones → matmul still gives 3.0 per elem
+		float[12] a_data2;
+		for (usz i = 0; i < 12; i++) { a_data2[i] = 1.0; }
+		Shape new_a = shape::shape_init({ 4, 3 });
+		a.bind(a_data2[0..], new_shape: &new_a);
+
+		out.collect()!!;
+		assert(out.shape().get(0) == 4, "out shape[0] should be 4 after rebind");
+		assert(out.shape().get(1) == 2, "out shape[1] should be 2");
+		float[8] vals;
+		out.get(vals[0..]);
+		for (usz i = 0; i < 8; i++)
+		{
+			assert(vals[i] == 1.0, "value mismatch in fused combine+relu kernel");
+		}
+	};
+}
+
+// ============================================================================
+// Test: reduce then add — proves shape cascades through multiple derived ops
+// ============================================================================
+//
+// Graph: x[B,K] → reduce("ij->i") → [B] → add(ones[B]) → [B]
+// Change B from 3 to 6.
+
+fn void test_reduce_then_add_shape_propagation() @test
+{
+	host_device::HostDevice cpu;
+	cpu.init();
+	defer cpu.deinit();
+	DeviceReference dev = cpu.reference();
+
+	graph::@subgraph()
+	{
+		Tensor x = tensor::empty(F32, dev, { 3, 4 })!!;
+		Tensor bias = tensor::empty(F32, dev, { 3 })!!;
+		x.fill(2.0);
+		bias.fill(1.0);
+
+		Tensor r = x.reduce("ij->i")!!;       // [3], each = 8.0
+		Tensor out = r.add(bias)!!;            // [3], each = 9.0
+		out.collect()!!;
+
+		assert(out.shape().len == 1, "out should be rank 1");
+		assert(out.shape().get(0) == 3, "out should have 3 elements");
+		float[3] vals1;
+		out.get(vals1[0..]);
+		for (usz i = 0; i < 3; i++)
+		{
+			assert(vals1[i] == 9.0, "reduce(2*4) + 1 = 9.0");
+		}
+
+		// Rebind x as [6,2], bias as [6]
+		float[12] x_data2;
+		float[6] bias_data2;
+		for (usz i = 0; i < 12; i++) { x_data2[i] = 3.0; }
+		for (usz i = 0; i < 6; i++) { bias_data2[i] = 5.0; }
+		Shape x_shape = shape::shape_init({ 6, 2 });
+		Shape b_shape = shape::shape_init({ 6 });
+		x.bind(x_data2[0..], new_shape: &x_shape);
+		bias.bind(bias_data2[0..], new_shape: &b_shape);
+
+		out.collect()!!;
+
+		assert(out.shape().get(0) == 6, "out should have 6 elements after rebind");
+		float[6] vals2;
+		out.get(vals2[0..]);
+		for (usz i = 0; i < 6; i++)
+		{
+			assert(vals2[i] == 11.0, "reduce(3*2) + 5 = 11.0");
+		}
+	};
+}
+
+// ============================================================================
+// Test: transpose (PERMUTE) shape propagation
+// ============================================================================
+//
+// Graph: x[M,N] → transpose → [N,M]
+// Change M from 2 to 4 (N stays 3).
+
+fn void test_transpose_shape_propagation() @test
+{
+	host_device::HostDevice cpu;
+	cpu.init();
+	defer cpu.deinit();
+	DeviceReference dev = cpu.reference();
+
+	graph::@subgraph()
+	{
+		// x = [[1,2,3],[4,5,6]] shape [2,3]
+		Tensor x = tensor::empty(F32, dev, { 2, 3 })!!;
+		float[6] x_data1 = { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0 };
+		x.bind(x_data1[0..]);
+
+		Tensor t = x.transpose(0, 1)!!;  // [3,2]
+		t.collect()!!;
+
+		assert(t.shape().get(0) == 3, "transposed shape[0] should be 3");
+		assert(t.shape().get(1) == 2, "transposed shape[1] should be 2");
+		// Transposed: [[1,4],[2,5],[3,6]]
+		float[6] vals1;
+		t.get(vals1[0..]);
+		assert(vals1[0] == 1.0, "t[0,0] should be 1.0");
+		assert(vals1[1] == 4.0, "t[0,1] should be 4.0");
+		assert(vals1[2] == 2.0, "t[1,0] should be 2.0");
+
+		// Rebind x as [4,3]
+		float[12] x_data2 = { 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0, 110.0, 120.0 };
+		Shape new_shape = shape::shape_init({ 4, 3 });
+		x.bind(x_data2[0..], new_shape: &new_shape);
+
+		t.collect()!!;
+
+		assert(t.shape().get(0) == 3, "transposed shape[0] should still be 3");
+		assert(t.shape().get(1) == 4, "transposed shape[1] should be 4 after rebind");
+		// Row-major [4,3]: [[10,20,30],[40,50,60],[70,80,90],[100,110,120]]
+		// Transposed [3,4]: [[10,40,70,100],[20,50,80,110],[30,60,90,120]]
+		float[12] vals2;
+		t.get(vals2[0..]);
+		assert(vals2[0] == 10.0, "t[0,0] should be 10.0");
+		assert(vals2[1] == 40.0, "t[0,1] should be 40.0");
+		assert(vals2[2] == 70.0, "t[0,2] should be 70.0");
+		assert(vals2[3] == 100.0, "t[0,3] should be 100.0");
+	};
+}
+
+// ============================================================================
+// Test: softmax (boundary op) shape propagation
+// ============================================================================
+//
+// softmax preserves input shape. Change [2,4] → [3,4].
+
+fn void test_softmax_shape_propagation() @test
+{
+	host_device::HostDevice cpu;
+	cpu.init();
+	defer cpu.deinit();
+	DeviceReference dev = cpu.reference();
+
+	graph::@subgraph()
+	{
+		Tensor x = tensor::empty(F32, dev, { 2, 4 })!!;
+		x.fill(0.0);  // softmax of all-zeros = uniform 1/N
+
+		Tensor s = functional::softmax(x, 1)!!;
+		s.collect()!!;
+
+		assert(s.shape().get(0) == 2, "softmax shape[0] should be 2");
+		assert(s.shape().get(1) == 4, "softmax shape[1] should be 4");
+		float val1; s.get(&val1);
+		assert(val1 == 0.25, "softmax of uniform should be 1/4 = 0.25");
+
+		// Rebind as [3,4]
+		float[12] x_data2;
+		for (usz i = 0; i < 12; i++) { x_data2[i] = 0.0; }
+		Shape new_shape = shape::shape_init({ 3, 4 });
+		x.bind(x_data2[0..], new_shape: &new_shape);
+
+		s.collect()!!;
+
+		assert(s.shape().get(0) == 3, "softmax shape[0] should be 3 after rebind");
+		assert(s.shape().get(1) == 4, "softmax shape[1] should be 4");
+		float[12] vals;
+		s.get(vals[0..]);
+		for (usz i = 0; i < 12; i++)
+		{
+			assert(vals[i] == 0.25, "softmax of uniform [3,4] should be 0.25");
+		}
+	};
+}
+
+// ============================================================================
+// Test: cast (boundary op) shape propagation
+// ============================================================================
+//
+// cast preserves shape but changes dtype. Change [2,3] → [4,3].
+
+fn void test_cast_shape_propagation() @test
+{
+	host_device::HostDevice cpu;
+	cpu.init();
+	defer cpu.deinit();
+	DeviceReference dev = cpu.reference();
+
+	graph::@subgraph()
+	{
+		Tensor x = tensor::empty(F32, dev, { 2, 3 })!!;
+		x.fill(7.0);
+
+		Tensor c = x.cast(F64)!!;
+		c.collect()!!;
+
+		assert(c.shape().get(0) == 2, "cast shape[0] should be 2");
+		assert(c.shape().get(1) == 3, "cast shape[1] should be 3");
+		double val1; c.get(&val1);
+		assert(val1 == 7.0, "cast value should be 7.0");
+
+		// Rebind as [4,3]
+		float[12] x_data2;
+		for (usz i = 0; i < 12; i++) { x_data2[i] = 42.0; }
+		Shape new_shape = shape::shape_init({ 4, 3 });
+		x.bind(x_data2[0..], new_shape: &new_shape);
+
+		c.collect()!!;
+
+		assert(c.shape().get(0) == 4, "cast shape[0] should be 4 after rebind");
+		assert(c.shape().get(1) == 3, "cast shape[1] should be 3");
+		double[12] vals;
+		c.get(vals[0..]);
+		for (usz i = 0; i < 12; i++)
+		{
+			assert(vals[i] == 42.0, "cast value should be 42.0");
+		}
+	};
+}
+
+// ============================================================================
+// Test: multi-step rebind (3 different shapes on same graph)
+// ============================================================================
+//
+// Proves the graph can handle repeated shape changes without corruption.
+
+fn void test_three_shape_changes() @test
+{
+	host_device::HostDevice cpu;
+	cpu.init();
+	defer cpu.deinit();
+	DeviceReference dev = cpu.reference();
+
+	graph::@subgraph()
+	{
+		Tensor x = tensor::empty(F32, dev, { 1, 4 })!!;
+		Tensor y = tensor::empty(F32, dev, { 1, 4 })!!;
+		x.fill(1.0);
+		y.fill(1.0);
+		Tensor z = x.add(y)!!;
+
+		// Shape 1: [1,4]
+		z.collect()!!;
+		assert(z.shape().get(1) == 4, "step 1: shape[1] should be 4");
+		float val; z.get(&val);
+		assert(val == 2.0, "step 1: 1+1 = 2");
+
+		// Shape 2: [1,8]
+		float[8] d2x; float[8] d2y;
+		for (usz i = 0; i < 8; i++) { d2x[i] = 3.0; d2y[i] = 4.0; }
+		Shape s2 = shape::shape_init({ 1, 8 });
+		x.bind(d2x[0..], new_shape: &s2);
+		y.bind(d2y[0..], new_shape: &s2);
+		z.collect()!!;
+		assert(z.shape().get(1) == 8, "step 2: shape[1] should be 8");
+		z.get(&val);
+		assert(val == 7.0, "step 2: 3+4 = 7");
+
+		// Shape 3: [1,2] (shrink)
+		float[2] d3x = { 10.0, 20.0 };
+		float[2] d3y = { 5.0, 5.0 };
+		Shape s3 = shape::shape_init({ 1, 2 });
+		x.bind(d3x[0..], new_shape: &s3);
+		y.bind(d3y[0..], new_shape: &s3);
+		z.collect()!!;
+		assert(z.shape().get(1) == 2, "step 3: shape[1] should be 2");
+		float[2] final_vals;
+		z.get(final_vals[0..]);
+		assert(final_vals[0] == 15.0, "step 3: 10+5 = 15");
+		assert(final_vals[1] == 25.0, "step 3: 20+5 = 25");
+	};
+}

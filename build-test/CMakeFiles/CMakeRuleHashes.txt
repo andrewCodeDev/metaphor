@@ -1,0 +1,3 @@
+# Hashes of file build rules.
+75d6e4d6748c3b90fbafa01f0f2c13dc CMakeFiles/metaphor
+165088b8b361f599e984abe5742f8e72 CMakeFiles/metaphor_test

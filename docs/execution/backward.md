@@ -1,0 +1,5 @@
+# Backward Pass
+
+Gradient computation in Metaphor is split into two phases: graph construction and execution. Calling backward on a tensor does not compute any gradient values. It walks the forward computation graph in reverse topological order and, for each operation, invokes the corresponding gradient rule to register new computation nodes. The result is a lazy gradient graph whose tensors have no data until explicitly collected.
+
+Gradient tensors are ordinary tensors. They have their own compute chains, participate in fusion, and can themselves be differentiated for higher-order derivatives. The gradient map associates each tensor with its gradient tensor, creating entries lazily on first access. Multiple backward calls accumulate into existing gradients. The same execution model applies to gradients as to forward computation: the symbolic chain map records operations for shape inference and backward traversal, while the execution sequence handles compiled kernel dispatch. Collection of a gradient tensor triggers compilation and execution just like any other tensor.

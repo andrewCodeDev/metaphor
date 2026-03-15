@@ -1,0 +1,7 @@
+# Graph
+
+The graph is Metaphor's central coordinator. It owns all tensors, tracks their operations, manages gradients, and orchestrates execution. Every tensor belongs to exactly one graph.
+
+Operations are registered lazily as symbolic nodes rather than executed immediately. These nodes form doubly-linked chains per tensor, enabling both forward traversal for execution ordering and backward traversal for gradient computation. When a tensor is collected, the graph checks whether a compiled execution unit exists for it. If not, it invokes the device compiler to produce one, then dispatches it. The device owns all optimization and compilation decisions; the graph only stores semantic operation descriptions without committing to any implementation strategy.
+
+The graph maintains a gradient map that associates tensors with their gradient tensors. Calling backward on a tensor walks the forward graph in reverse and constructs gradient computation chains, but does not execute them. Gradients are ordinary lazy tensors that must be collected to materialize. The graph also supports subgraph isolation, where a temporary graph is created for scoped computation and destroyed on exit, with selected results exported as leaves on the parent graph. Persistence levels control both compilation boundaries and data lifetime: tensors marked as fusable can be inlined into consumer kernels, while boundary tensors must be materialized separately. A fingerprint-based system tracks leaf mutations and prevents redundant re-execution of already-computed results.

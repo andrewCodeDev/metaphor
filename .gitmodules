@@ -1,0 +1,10 @@
+[submodule "src/cuda/third_party/fmt"]
+	path = src/cuda/third_party/fmt
+	url = https://github.com/fmtlib/fmt.git
+[submodule "src/third_party/fmt"]
+	path = src/third_party/fmt
+	url = https://github.com/fmtlib/fmt.git
+[submodule "third_party/hipTensor"]
+	path = third_party/hipTensor
+	url = https://github.com/ROCm/hipTensor.git
+	branch = develop
