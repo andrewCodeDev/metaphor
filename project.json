@@ -4,7 +4,7 @@
     "authors": ["Andrew"],
     "sources": ["src/*", "src/cas/**", "src/codegen/**", "src/device/*", "src/device/common/**", "src/device/host_device/**", "src/graph/**", "src/mem/**", "src/nn/**", "src/tensor/**", "src/testing/**", "src/tokenizers/**", "src/utils/**", "src/device/hip_device/**"],
     "c-sources": ["src/utils/cjson/cJSON.c"],
-    "test-sources": ["testing/*", "testing/cas/**", "testing/device/*", "testing/device/common/**", "testing/device/host_device/**", "testing/graph/**", "testing/host/**", "testing/tensor/**", "testing/tokenizers/**", "testing/utils/**", "testing/device/hip_device/**"],
+    "test-sources": ["testing/*", "testing/cas/**", "testing/device/*", "testing/device/common/**", "testing/device/host_device/**", "testing/graph/**", "testing/host/**", "testing/tensor/**", "testing/utils/**", "testing/device/hip_device/**"],
     "output": "build",
     "features": ["ENABLE_HIP", "HOST_BLAS_MKL", "ENABLE_SORT"],
     "linked-libraries": ["mkl_rt", "metaphor_hip"],

@@ -1,6 +1,0 @@
-/home/andrew/migration/metaphor/build-test/CMakeFiles/metaphor_hip.dir
-/home/andrew/migration/metaphor/build-test/CMakeFiles/metaphor.dir
-/home/andrew/migration/metaphor/build-test/CMakeFiles/metaphor_test.dir
-/home/andrew/migration/metaphor/build-test/CMakeFiles/test.dir
-/home/andrew/migration/metaphor/build-test/CMakeFiles/edit_cache.dir
-/home/andrew/migration/metaphor/build-test/CMakeFiles/rebuild_cache.dir

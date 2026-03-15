@@ -341,7 +341,6 @@ set(_TEST_SOURCES
     "testing/graph/**"
     "testing/host/**"
     "testing/tensor/**"
-    "testing/tokenizers/**"
     "testing/utils/**"
 )
 

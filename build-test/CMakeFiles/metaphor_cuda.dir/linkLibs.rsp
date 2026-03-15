@@ -1,1 +1,0 @@
-  -L"/usr/lib/x86_64-linux-gnu/libcutensor/13"  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/libcutensor/13 -lcuda -lcudart -lcublas -lcurand -lcutensor -lcudnn -lnvrtc -lcudadevrt -lcudart_static -lrt -lpthread -ldl 
