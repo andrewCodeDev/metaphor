@@ -1,6 +1,6 @@
 # Metaphor
 
-Metaphor is a tensor computation library built around lazy graph construction and deferred execution. Operations are recorded as a symbolic graph and compiled into fused kernels at execution time, enabling automatic operator fusion, memory lifecycle management, and device-agnostic code.
+Metaphor is a tensor framework for running and training machine learning models, written in C3. Operations are recorded as a lazy symbolic graph and compiled into fused kernels at execution time, enabling automatic operator fusion, memory lifecycle management, and automatic differentiation.
 
 ## Design
 
@@ -8,8 +8,16 @@ Tensors are lightweight handles. Operations on them produce graph nodes, not imm
 
 - Fuses compatible element-wise operations into single kernel launches
 - Manages tensor memory lifetimes via reference-counted liveness analysis
-- Supports automatic differentiation through the same graph infrastructure
+- Constructs backward passes through the same graph infrastructure
 - Compiles once and re-executes via fingerprint-based change detection
+
+## Backends
+
+- **Host** — JIT-compiled kernels with BLAS acceleration (MKL/OpenBLAS)
+- **CUDA** — NVIDIA GPUs via cuTENSOR, cuDNN, and NVRTC
+- **HIP** — AMD GPUs via ROCm, hipTENSOR, and runtime kernel compilation
+
+Backend selection is transparent to user code. The same model definition runs on any supported device.
 
 ## Getting Started
 
@@ -19,18 +27,31 @@ See the installation guides for dependencies and build instructions:
 - [CUDA (NVIDIA GPUs)](docs/installation/cuda.md) — CUDA toolkit, cuDNN, cuTENSOR
 - [HIP/ROCm (AMD GPUs)](docs/installation/hip.md) — ROCm, hipBLAS, MIOpen, hipTensor
 
-Backend selection is transparent to user code. The same model definition runs on any supported device.
-
-## Autodiff
-
-Backward passes are constructed by composing forward operations — the same mechanism used for forward computation. Gradient kernels are fused and scheduled through the execution graph like any other operation.
-
 ## Snippets
 
+Device setup — same code structure for any backend:
+
 ```c3
-/// Apply rotary position embeddings to q or k (batched prefill).
-/// x: [B, S, H, head_dim], cos_pos: [1, S, 1, head_dim/2], sin_pos: [1, S, 1, head_dim/2]
-/// Returns [B, S, H, head_dim] with RoPE applied.
+// Host (CPU)
+host_device::HostDevice cpu;
+cpu.init();
+defer cpu.deinit();
+DeviceReference dev = cpu.reference();
+
+// CUDA (NVIDIA GPU)
+cuda_device::CudaDevice gpu = cuda_device::cuda_device_create({ .device_id = 0 });
+defer gpu.deinit();
+DeviceReference dev = gpu.reference();
+
+// HIP (AMD GPU)
+hip_device::HipDevice gpu = hip_device::hip_device_create({ .device_id = 0 });
+defer gpu.deinit();
+DeviceReference dev = gpu.reference();
+```
+
+Rotary position embeddings — slicing, broadcasting, and concatenation:
+
+```c3
 fn Tensor? apply_rope_batched(Tensor x, Tensor cos_pos, Tensor sin_pos)
 {
 	ulong half = x.shape().get(3) / 2;
@@ -43,39 +64,15 @@ fn Tensor? apply_rope_batched(Tensor x, Tensor cos_pos, Tensor sin_pos)
 }
 ```
 
+SSM output with einsum, gating, and optional LoRA:
+
 ```c3
-	// 10. Output: y = C * h + D * x
 Tensor y = c_proj.einsum(h, "bld,bled->ble")!!
 	.add(x_silu.einsum(self.d_vec, "ble,e->ble")!!)!!;
 
-// 11. Gate with z_branch
 Tensor gated = y.mul(z_branch.silu()!!)!!;
 
-// 12. Output projection with optional LoRA
 return self.has_out_proj_lora
 	? lora_forward(&self.out_proj_lora, gated, self.out_proj, dev)!!.stable()
 	: functional::linear(gated, self.out_proj)!!.stable();
-```
-
-```c3
-host_device::HostDevice cpu;
-cpu.init();
-DeviceReference dev = cpu.reference();
-
-graph::@subgraph()
-{
-	Tensor a = tensor::constant(F32, dev, { 2, 3 }, 2.0)!!;
-	Tensor b = tensor::constant(F32, dev, { 2, 3 }, 3.0)!!;
-	Tensor c = (a + b).collect();
-
-	dev.sync();
-
-	float[6] result;
-	c.get(&result);
-
-	for (usz i = 0; i < 6; i++)
-	{
-		assert(math::abs(result[i] - 5.0f) < TOL, "add: expected 5.0");
-	}
-};
 ```
