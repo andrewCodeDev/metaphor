@@ -78,15 +78,10 @@ graph::@subgraph()
 };
 ```
 
-## Building
+## Getting Started
 
-```
-c3c build                          # build the static library
-cmake --build build -j$(nproc)     # build GPU shared libraries
-```
+See the installation guides for dependencies and build instructions:
 
-## Testing
-
-```
-timeout 60 c3c test metaphor       # run the full test suite
-```
+- [Base (host-only)](docs/installation/base.md) — C3 compiler, CMake, BLAS
+- [CUDA (NVIDIA GPUs)](docs/installation/cuda.md) — CUDA toolkit, cuDNN, cuTENSOR
+- [HIP/ROCm (AMD GPUs)](docs/installation/hip.md) — ROCm, hipBLAS, MIOpen, hipTensor
