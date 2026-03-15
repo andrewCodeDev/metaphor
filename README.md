@@ -11,21 +11,13 @@ Tensors are lightweight handles. Operations on them produce graph nodes, not imm
 - Constructs backward passes through the same graph infrastructure
 - Compiles once and re-executes via fingerprint-based change detection
 
-## Backends
-
-- **Host** — JIT-compiled kernels with BLAS acceleration (MKL/OpenBLAS)
-- **CUDA** — NVIDIA GPUs via cuTENSOR, cuDNN, and NVRTC
-- **HIP** — AMD GPUs via ROCm, hipTENSOR, and runtime kernel compilation
-
-Backend selection is transparent to user code. The same model definition runs on any supported device.
-
 ## Getting Started
 
-See the installation guides for dependencies and build instructions:
+Metaphor supports three backends. The same model definition runs on any of them — see the installation guides for dependencies and build instructions:
 
-- [Base (host-only)](docs/installation/base.md) — C3 compiler, CMake, BLAS
-- [CUDA (NVIDIA GPUs)](docs/installation/cuda.md) — CUDA toolkit, cuDNN, cuTENSOR
-- [HIP/ROCm (AMD GPUs)](docs/installation/hip.md) — ROCm, hipBLAS, MIOpen, hipTensor
+- [**Host**](docs/installation/base.md) — JIT-compiled kernels with BLAS acceleration (MKL/OpenBLAS)
+- [**CUDA**](docs/installation/cuda.md) — NVIDIA GPUs via cuTENSOR, cuDNN, and NVRTC
+- [**HIP**](docs/installation/hip.md) — AMD GPUs via ROCm, hipTENSOR, and runtime kernel compilation
 
 ## Snippets
 
@@ -72,7 +64,7 @@ Tensor y = c_proj.einsum(h, "bld,bled->ble")!!
 
 Tensor gated = y.mul(z_branch.silu()!!)!!;
 
-return self.has_out_proj_lora
-	? lora_forward(&self.out_proj_lora, gated, self.out_proj, dev)!!.stable()
-	: functional::linear(gated, self.out_proj)!!.stable();
+return (self.has_out_proj_lora
+	? lora_forward(&self.out_proj_lora, gated, self.out_proj, dev)!!
+	: functional::linear(gated, self.out_proj)!!).stable();
 ```
