@@ -35,7 +35,3 @@ cmake --build build -j$(nproc)     # build GPU shared libraries
 ```
 timeout 60 c3c test metaphor       # run the full test suite
 ```
-
-## License
-
-Apache 2.0
