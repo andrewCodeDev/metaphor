@@ -11,11 +11,13 @@ Tensors are lightweight handles. Operations on them produce graph nodes, not imm
 - Supports automatic differentiation through the same graph infrastructure
 - Compiles once and re-executes via fingerprint-based change detection
 
-## Backends
+## Getting Started
 
-- **Host** — JIT-compiled kernels with BLAS acceleration (MKL/OpenBLAS)
-- **HIP** — AMD GPUs via ROCm, hipTENSOR, and runtime kernel compilation
-- **CUDA** — NVIDIA GPUs via cuTENSOR, cuDNN, and NVRTC
+See the installation guides for dependencies and build instructions:
+
+- [Base (host-only)](docs/installation/base.md) — C3 compiler, CMake, BLAS
+- [CUDA (NVIDIA GPUs)](docs/installation/cuda.md) — CUDA toolkit, cuDNN, cuTENSOR
+- [HIP/ROCm (AMD GPUs)](docs/installation/hip.md) — ROCm, hipBLAS, MIOpen, hipTensor
 
 Backend selection is transparent to user code. The same model definition runs on any supported device.
 
@@ -77,11 +79,3 @@ graph::@subgraph()
 	}
 };
 ```
-
-## Getting Started
-
-See the installation guides for dependencies and build instructions:
-
-- [Base (host-only)](docs/installation/base.md) — C3 compiler, CMake, BLAS
-- [CUDA (NVIDIA GPUs)](docs/installation/cuda.md) — CUDA toolkit, cuDNN, cuTENSOR
-- [HIP/ROCm (AMD GPUs)](docs/installation/hip.md) — ROCm, hipBLAS, MIOpen, hipTensor
