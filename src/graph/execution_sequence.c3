@@ -21,6 +21,7 @@ import metaphor::graph;
 import metaphor::events;
 import metaphor::device::device_reference;
 import std::io;
+import std::collections::list;
 
 alias TensorCorePtr = tensor_core::TensorCore*;
 
@@ -59,8 +60,7 @@ struct ExecutionUnit
 
 	/// Consumer units — units that depend on this unit's output.
 	/// Inverse of direct_sources, computed in finalize_closures.
-	ExecutionUnit*[] consumers;
-	usz consumer_count;
+	list::List{ExecutionUnit*} consumers;
 
 	/// Tensor cores (embedded inline — no separate map).
 	TensorCorePtr[] source_cores;
@@ -70,8 +70,8 @@ struct ExecutionUnit
 	RefCount ref_count;
 
 	/// Bit vector of transitive leaf dependencies (indices into LeafRegistry).
-	/// Built once in finalize_closures(). Used to compute fingerprints.
-	ulong[] leaf_bits;
+	/// Built in finalize_closures(). Used to compute fingerprints.
+	list::List{ulong} leaf_bits;
 
 	/// Fingerprint of leaf mutation state at last execution.
 	/// XOR of hash(leaf_index, mutation_counter) for each leaf in leaf_bits.
@@ -92,32 +92,27 @@ struct LeafEntry
 
 struct LeafRegistry
 {
-	LeafEntry[] entries;
-	usz count;
+	list::List{LeafEntry} entries;
 	hash_map::HashMap{uptr, usz} ptr_to_index;  // leaf ptr → index
 	Allocator allocator;
 }
 
 fn void LeafRegistry.init(&self, Allocator alloc)
 {
-	self.entries = {};
-	self.count = 0;
+	self.entries.init(alloc, initial_capacity: 64);
 	self.ptr_to_index.init(alloc);
 	self.allocator = alloc;
 }
 
 fn void LeafRegistry.free(&self)
 {
-	if (self.entries.len > 0)
-	{
-		allocator::free(self.allocator, self.entries);
-	}
+	self.entries.free();
 	self.ptr_to_index.free();
 }
 
 fn void LeafRegistry.clear(&self)
 {
-	self.count = 0;
+	self.entries.clear();
 	self.ptr_to_index.clear();
 }
 
@@ -128,22 +123,9 @@ fn usz LeafRegistry.register_leaf(&self, uptr leaf_ptr)
 	{
 		return idx;
 	}
-	usz idx = self.count;
-	// Grow if needed
-	if (idx >= self.entries.len)
-	{
-		usz new_cap = self.entries.len == 0 ? 64 : self.entries.len * 2;
-		LeafEntry[] new_buf = allocator::alloc_array(self.allocator, LeafEntry, new_cap);
-		if (self.entries.len > 0)
-		{
-			new_buf[:self.count] = self.entries[:self.count];
-			allocator::free(self.allocator, self.entries);
-		}
-		self.entries = new_buf;
-	}
-	self.entries[idx] = { .ptr = leaf_ptr, .mutations = 0 };
+	usz idx = self.entries.size;
+	self.entries.push({ .ptr = leaf_ptr, .mutations = 0 });
 	self.ptr_to_index.set(leaf_ptr, idx);
-	self.count++;
 	return idx;
 }
 
@@ -152,31 +134,18 @@ fn bool LeafRegistry.mutate(&self, uptr leaf_ptr)
 {
 	if (try idx = self.ptr_to_index.get(leaf_ptr))
 	{
-		self.entries[idx].mutations++;
+		(&self.entries[idx]).mutations++;
 		return true;
 	}
 	return false;
 }
 
 /// Number of ulong words needed for a bit vector covering all leaves.
-fn usz LeafRegistry.bitvec_words(&self) => (self.count + 63) / 64;
+fn usz LeafRegistry.bitvec_words(&self) => (self.entries.size + 63) / 64;
 
-fn void ExecutionUnit.add_consumer(&self, Allocator alloc, ExecutionUnit* consumer)
+fn void ExecutionUnit.add_consumer(&self, ExecutionUnit* consumer)
 {
-	// Grow consumers array if needed
-	if (self.consumer_count >= self.consumers.len)
-	{
-		usz new_cap = self.consumers.len == 0 ? 4 : self.consumers.len * 2;
-		ExecutionUnit*[] new_buf = allocator::alloc_array(alloc, ExecutionUnit*, new_cap);
-		if (self.consumers.len > 0)
-		{
-			new_buf[:self.consumer_count] = self.consumers[:self.consumer_count];
-			allocator::free(alloc, self.consumers);
-		}
-		self.consumers = new_buf;
-	}
-	self.consumers[self.consumer_count] = consumer;
-	self.consumer_count++;
+	self.consumers.push(consumer);
 }
 
 // HashMap aliases
@@ -184,7 +153,6 @@ fn void ExecutionUnit.add_consumer(&self, Allocator alloc, ExecutionUnit* consum
 alias PtrToUnitPtrMap = hash_map::HashMap {uptr, ExecutionUnit*};
 
 // OffloadBuffer — CPU-side copy of device tensor data
-
 alias OffloadBuffer = char[];
 
 alias PtrToOffloadMap = hash_map::HashMap {uptr, OffloadBuffer};
@@ -293,23 +261,11 @@ fn void ExecutionSequence.destroy_all_units(&self)
 		Executable e = (Executable)unit.operation;
 		if (&e.destroy) { e.destroy(); }
 
-		if (unit.direct_sources.len > 0)
-		{
-			allocator::free(self.allocator, unit.direct_sources);
-		}
-		if (unit.consumers.len > 0)
-		{
-			allocator::free(self.allocator, unit.consumers);
-		}
-		if (unit.source_cores.len > 0)
-		{
-			allocator::free(self.allocator, unit.source_cores);
-		}
-		if (unit.leaf_bits.len > 0)
-		{
-			allocator::free(self.allocator, unit.leaf_bits);
-		}
-		allocator::free(self.allocator, ((ExecutionUnit[1]*)unit)[:1]);
+		allocator::free(self.allocator, unit.direct_sources);
+		unit.consumers.free();
+		allocator::free(self.allocator, unit.source_cores);
+		unit.leaf_bits.free();
+		allocator::free(self.allocator, unit);
 	}
 }
 
@@ -388,7 +344,7 @@ fn void ExecutionSequence.offload_tensor(&self, TensorCorePtr core)
 	tensor_core::TensorCore* tc = core;
 
 	// Only stable tensors can be offloaded
-	assert(tc.flags.persistence >= tensor_core::Persistence.STABLE,
+	assert(tc.flags.persistence >= STABLE,
 		"Can only offload stable tensors");
 
 	// Skip if host device — data is already on CPU
@@ -398,7 +354,7 @@ fn void ExecutionSequence.offload_tensor(&self, TensorCorePtr core)
 	if (!tc.has_data()) { return; }
 
 	// Only support dense tensors for offloading
-	assert(tc.state.class_ == tensor_core::CoreClass.DENSE,
+	assert(tc.state.class_ == DENSE,
 		"Can only offload dense tensors");
 
 	usz byte_size = (usz)tc.state.dense.byte_size;
@@ -423,7 +379,7 @@ fn void ExecutionSequence.offload_tensor(&self, TensorCorePtr core)
 
 	// DtoH copy
 	char[] host_dst = buf;
-	tc.device.mem_transfer(device_data, host_dst, device_reference::TransferDirection.DTOH);
+	tc.device.mem_transfer(device_data, host_dst, DTOH);
 
 	// Store in map
 	self.offload_buffers.set((uptr)core, buf);
@@ -453,7 +409,7 @@ fn void ExecutionSequence.restore_tensor(&self, TensorCorePtr core) @private
 	char[] device_dst = ((char*)tc.state.dense.data)[:buf.len];
 
 	// HtoD copy
-	tc.device.mem_transfer(host_src, device_dst, device_reference::TransferDirection.HTOD);
+	tc.device.mem_transfer(host_src, device_dst, HTOD);
 
 	// Keep CPU buffer and map entry for reuse on next offload cycle
 	stats_restored++;
@@ -483,7 +439,7 @@ fn void ExecutionSequence.free_offload_buffers(&self) @private
  Source dependencies are resolved internally from source_cores via the
  target_to_unit_map. No integer indices needed.
  Returns a pointer to the new unit.
- @require target_core.flags.persistence != tensor_core::Persistence.NONE
+ @require target_core.flags.persistence != NONE
      : "tensor must have persistence before entering execution sequence"
 *>
 fn ExecutionUnit* ExecutionSequence.append(
@@ -496,58 +452,30 @@ fn ExecutionUnit* ExecutionSequence.append(
 	assert(!self.corrupted,
 		"Cannot add to corrupted execution sequence. A compiled tensor was destroyed.");
 
-	// Copy source cores
-	TensorCorePtr[] cores_copy = {};
-	if (source_cores.len > 0)
-	{
-		cores_copy = allocator::alloc_array(self.allocator, TensorCorePtr, source_cores.len);
-		cores_copy[..] = source_cores[..];
-	}
-
-	// Resolve source units from tensor pointers
-	ExecutionUnit*[64] src_units_buf;
+	// Resolve source units: look up which source_cores have producing units
+	ExecutionUnit*[64] src_buf;
 	usz src_count = 0;
-
 	for (usz i = 0; i < source_cores.len; i++)
 	{
 		if (try src_unit = self.target_to_unit_map.get((uptr)source_cores[i]))
 		{
-			// Deduplicate
-			bool already = false;
-			for (usz j = 0; j < src_count; j++)
-			{
-				if (src_units_buf[j] == src_unit) { already = true; break; }
-			}
-			if (!already)
-			{
-				assert(src_count < 64, "execution sequence: source unit count exceeds 64-element buffer");
-				src_units_buf[src_count] = src_unit;
-				src_count++;
-			}
+			src_buf[src_count] = src_unit;
+			src_count++;
 		}
 	}
 
-	// Copy source units
-	ExecutionUnit*[] sources_copy = {};
-	if (src_count > 0)
-	{
-		sources_copy = allocator::alloc_array(self.allocator, ExecutionUnit*, src_count);
-		sources_copy[..] = src_units_buf[:src_count];
-	}
-
 	// Heap-allocate the unit
-	ExecutionUnit[] unit_mem = allocator::alloc_array(self.allocator, ExecutionUnit, 1);
-	ExecutionUnit* unit = &unit_mem[0];
+	ExecutionUnit* unit = allocator::new(self.allocator, ExecutionUnit);
 
 	*unit = {
 		.operation = operation,
-		.direct_sources = sources_copy,
-		.consumers = {},
-		.consumer_count = 0,
-		.source_cores = cores_copy,
+		.direct_sources = allocator::clone_slice(self.allocator, src_buf[:src_count]),
+		.source_cores = allocator::clone_slice(self.allocator, source_cores),
 		.target = target_core,
 		.ref_count = { .count = 0, .visited = false },
 	};
+	unit.consumers.init(self.allocator, initial_capacity: 4);
+	unit.leaf_bits.init(self.allocator, initial_capacity: 0);
 
 	// Register target → unit mapping
 	self.target_to_unit_map.set((uptr)target_core, unit);
@@ -558,71 +486,19 @@ fn ExecutionUnit* ExecutionSequence.append(
 // Finalize Closures — compute dependency relationships
 
 <*
- Computes consumer relationships (inverse of direct_sources).
- Also merges in any additional source dependencies discovered from
- source_cores via the target_to_unit_map.
+ Computes consumer relationships (inverse of direct_sources)
+ and rebuilds leaf bit vectors for fingerprinting.
 *>
 fn void ExecutionSequence.finalize_closures(&self)
 {
-	// First pass: ensure all source edges are resolved
-	swisstable::SwissTableValueIterator {uptr, ExecutionUnit*} it = self.target_to_unit_map.value_iter();
-	while (try unit = it.next())
-	{
-		// Resolve any source cores that didn't have units at append time
-		ExecutionUnit*[64] merged_buf;
-		usz merged_count = 0;
-
-		// Start with existing direct_sources
-		for (usz s = 0; s < unit.direct_sources.len; s++)
-		{
-			merged_buf[merged_count] = unit.direct_sources[s];
-			merged_count++;
-		}
-
-		// Check source_cores for additional units
-		for (usz s = 0; s < unit.source_cores.len; s++)
-		{
-			if (try src_unit = self.target_to_unit_map.get((uptr)unit.source_cores[s]))
-			{
-				// Skip self-dependency
-				if (src_unit == unit) { continue; }
-
-				// Deduplicate
-				bool already = false;
-				for (usz k = 0; k < merged_count; k++)
-				{
-					if (merged_buf[k] == src_unit) { already = true; break; }
-				}
-				if (!already)
-				{
-					assert(merged_count < 64, "execution sequence: merged source count exceeds 64-element buffer");
-					merged_buf[merged_count] = src_unit;
-					merged_count++;
-				}
-			}
-		}
-
-		// Update if changed
-		if (merged_count != unit.direct_sources.len)
-		{
-			ExecutionUnit*[] new_sources = allocator::alloc_array(self.allocator, ExecutionUnit*, merged_count);
-			new_sources[..] = merged_buf[:merged_count];
-			if (unit.direct_sources.len > 0)
-			{
-				allocator::free(self.allocator, unit.direct_sources);
-			}
-			unit.direct_sources = new_sources;
-		}
-	}
-
-	// Second pass: compute consumers (inverse of direct_sources)
+	// First pass: compute consumers (inverse of direct_sources)
 	swisstable::SwissTableValueIterator {uptr, ExecutionUnit*} it2 = self.target_to_unit_map.value_iter();
 	while (try consumer = it2.next())
 	{
 		for (usz s = 0; s < consumer.direct_sources.len; s++)
 		{
 			ExecutionUnit* source = consumer.direct_sources[s];
-			source.add_consumer(self.allocator, consumer);
+			source.add_consumer(consumer);
 		}
 	}
 
@@ -631,7 +507,7 @@ fn void ExecutionSequence.finalize_closures(&self)
 	swisstable::SwissTableValueIterator {uptr, ExecutionUnit*} it_clear = self.target_to_unit_map.value_iter();
 	while (try unit = it_clear.next())
 	{
-		unit.leaf_bits = {};
+		unit.leaf_bits.clear();
 	}
 
 	// Discover and register all leaf source_cores.
@@ -661,18 +537,17 @@ fn void ExecutionSequence.finalize_closures(&self)
 // Leaf bit vector construction
 
 /// Recursively build the leaf_bits for a unit.
-/// Memoized: if leaf_bits is already allocated, return immediately.
+/// Memoized: if leaf_bits.size > 0, return immediately.
 fn void ExecutionSequence.build_leaf_bits(&self, ExecutionUnit* unit) @private
 {
 	// Already built (memoization)
-	if (unit.leaf_bits.len > 0) { return; }
+	if (unit.leaf_bits.size > 0) { return; }
 
 	usz words = self.leaf_registry.bitvec_words();
 	if (words == 0) { return; }  // no leaves at all
 
-	// Allocate and zero
-	unit.leaf_bits = allocator::alloc_array(self.allocator, ulong, words);
-	for (usz i = 0; i < words; i++) { unit.leaf_bits[i] = 0; }
+	// Reserve and zero-fill
+	for (usz i = 0; i < words; i++) { unit.leaf_bits.push(0); }
 
 	// Set bits for direct leaf sources
 	for (usz s = 0; s < unit.source_cores.len; s++)
@@ -682,7 +557,7 @@ fn void ExecutionSequence.build_leaf_bits(&self, ExecutionUnit* unit) @private
 		{
 			if (try idx = self.leaf_registry.ptr_to_index.get((uptr)unit.source_cores[s]))
 			{
-				unit.leaf_bits[idx / 64] |= (ulong)1 << (idx % 64);
+				*(&unit.leaf_bits[idx / 64]) |= (ulong)1 << (idx % 64);
 			}
 		}
 	}
@@ -692,13 +567,13 @@ fn void ExecutionSequence.build_leaf_bits(&self, ExecutionUnit* unit) @private
 	{
 		ExecutionUnit* src_unit = unit.direct_sources[s];
 		self.build_leaf_bits(src_unit);  // recurse (memoized)
-		if (src_unit.leaf_bits.len > 0)
+		if (src_unit.leaf_bits.size > 0)
 		{
-			usz src_words = src_unit.leaf_bits.len;
+			usz src_words = src_unit.leaf_bits.size;
 			usz union_words = words < src_words ? words : src_words;
 			for (usz w = 0; w < union_words; w++)
 			{
-				unit.leaf_bits[w] |= src_unit.leaf_bits[w];
+				*(&unit.leaf_bits[w]) |= src_unit.leaf_bits[w];
 			}
 		}
 	}
@@ -751,9 +626,9 @@ fn void ExecutionSequence.compute_ref_counts(&self, ExecutionUnit* unit) @privat
 	tensor_core::TensorCore* tc_unit = unit.target;
 
 	// Fingerprint frontier: has data, has executed before, and fingerprint matches → fresh, stop
-	if (tc_unit.has_data() && unit.has_executed && unit.leaf_bits.len > 0)
+	if (tc_unit.has_data() && unit.has_executed && unit.leaf_bits.size > 0)
 	{
-		ulong current_fp = compute_fingerprint(unit.leaf_bits, &self.leaf_registry);
+		ulong current_fp = compute_fingerprint(unit.leaf_bits.array_view(), &self.leaf_registry);
 		if (current_fp == unit.fingerprint) { return; }
 	}
 
@@ -797,9 +672,9 @@ fn void ExecutionSequence.dfs_execute(
 	tensor_core::TensorCore* tc = target;
 
 	// Fingerprint frontier: has data, has executed, fingerprint matches → skip
-	if (tc.has_data() && unit.has_executed && unit.leaf_bits.len > 0)
+	if (tc.has_data() && unit.has_executed && unit.leaf_bits.size > 0)
 	{
-		ulong current_fp = compute_fingerprint(unit.leaf_bits, &self.leaf_registry);
+		ulong current_fp = compute_fingerprint(unit.leaf_bits.array_view(), &self.leaf_registry);
 		if (current_fp == unit.fingerprint)
 		{
 			stats_skipped++;
@@ -826,11 +701,11 @@ fn void ExecutionSequence.dfs_execute(
 	if (tc.flags.offload && !tc.has_data() && self.offload_buffers.has_key((uptr)target))
 	{
 		self.restore_tensor(target);
-		events::fire(target, events::EventKind.RESTORE);
+		events::fire(target, EventKind.RESTORE);
 		// Update fingerprint — restored data is current
-		if (unit.leaf_bits.len > 0)
+		if (unit.leaf_bits.size > 0)
 		{
-			unit.fingerprint = compute_fingerprint(unit.leaf_bits, &self.leaf_registry);
+			unit.fingerprint = compute_fingerprint(unit.leaf_bits.array_view(), &self.leaf_registry);
 		}
 		unit.has_executed = true;
 		return;
@@ -854,7 +729,7 @@ fn void ExecutionSequence.dfs_execute(
 		if (!src_tc.has_data() && self.offload_buffers.has_key((uptr)src))
 		{
 			self.restore_tensor(src);
-			events::fire(src, events::EventKind.RESTORE);
+			events::fire(src, EventKind.RESTORE);
 		}
 
 		if (try src_unit = self.target_to_unit_map.get((uptr)src))
@@ -869,51 +744,28 @@ fn void ExecutionSequence.dfs_execute(
 	// Allocate output memory if needed
 	if (!tc.has_data())
 	{
-		// // Debug: log large allocations with shape
-		// usz alloc_bytes = tc.shape().size() * tc.dtype().size_of();
-		// if (alloc_bytes > 64 * 1024 * 1024) // > 64 MB
-		// {
-		// 	io::eprintf("[SHAPE_DEBUG] alloc %d MB shape=[", (int)(alloc_bytes / (1024 * 1024)));
-		// 	for (usz di = 0; di < tc.shape().len; di++)
-		// 	{
-		// 		if (di > 0) io::eprintf(",");
-		// 		io::eprintf("%d", tc.shape().get(di));
-		// 	}
-		// 	if (tc.label.len > 0)
-		// 	{
-		// 		io::eprintfn("] label=%s", (ZString)tc.label.ptr);
-		// 	}
-		// 	else
-		// 	{
-		// 		io::eprintfn("] (unlabeled)");
-		// 	}
-		// }
 		tc.alloc_data();
 	}
 
-	// Execute
 	Executable e = (Executable)unit.operation;
 	e.execute(unit.source_cores, target);
 
 	// Update fingerprint to current leaf state
-	if (unit.leaf_bits.len > 0)
+	if (unit.leaf_bits.size > 0)
 	{
-		unit.fingerprint = compute_fingerprint(unit.leaf_bits, &self.leaf_registry);
+		unit.fingerprint = compute_fingerprint(unit.leaf_bits.array_view(), &self.leaf_registry);
 	}
 	unit.has_executed = true;
 	stats_executed++;
 
 	// Fire event callback if registered
-	events::fire(target, events::EventKind.EXECUTE);
+	events::fire(target, EventKind.EXECUTE);
 
 	// Ref-count freeing: decrement deps, free when count hits 0
 	for (usz s = 0; s < unit.direct_sources.len; s++)
 	{
 		ExecutionUnit* dep = unit.direct_sources[s];
 		TensorCorePtr dep_target = dep.target;
-
-		// Don't free inplace target
-		if (dep_target == target) { continue; }
 
 		// Don't free leaf or stable tensors (unless offload-flagged)
 		{
@@ -942,7 +794,7 @@ fn void ExecutionSequence.dfs_execute(
 					if (tc_freed.flags.offload)
 					{
 						self.offload_tensor(dep_target);
-						events::fire(dep_target, events::EventKind.OFFLOAD);
+						events::fire(dep_target, EventKind.OFFLOAD);
 					}
 					else
 					{
