@@ -672,12 +672,11 @@ fn void compile_dropout(
 	hip_op.op_type = DROPOUT;
 	hip_op.result = output;
 	hip_op.dropout.p = p.p;
-	hip_op.dropout.seed = p.seed;
-	hip_op.dropout.is_bwd = p.is_backward;
 
-	assert(entry.inputs.len >= 1, "dropout requires 1 input");
+	assert(entry.inputs.len >= 2, "dropout requires 2 inputs (input + mask)");
 	hip_op.inputs[0] = (void*)entry.inputs[0];
-	hip_op.input_count = 1;
+	hip_op.inputs[1] = (void*)entry.inputs[1];
+	hip_op.input_count = 2;
 
 	register_hip_op(device, g, entry, hip_op);
 }

@@ -671,12 +671,11 @@ fn void compile_dropout(
 	cuda_op.op_type = DROPOUT;
 	cuda_op.result = output;
 	cuda_op.dropout.p = p.p;
-	cuda_op.dropout.seed = p.seed;
-	cuda_op.dropout.is_bwd = p.is_backward;
 
-	assert(entry.inputs.len >= 1, "dropout requires 1 input");
+	assert(entry.inputs.len >= 2, "dropout requires 2 inputs (input + mask)");
 	cuda_op.inputs[0] = (void*)entry.inputs[0];
-	cuda_op.input_count = 1;
+	cuda_op.inputs[1] = (void*)entry.inputs[1];
+	cuda_op.input_count = 2;
 
 	register_cuda_op(device, g, entry, cuda_op);
 }

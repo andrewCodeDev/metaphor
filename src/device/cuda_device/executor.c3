@@ -22,6 +22,7 @@ import std::io;
 import std::os::posix;
 import std::core::string;
 import std::core::mem::allocator;
+import std::math::random;
 import std::thread;
 
 // Helpers
@@ -1121,48 +1122,20 @@ fn void execute_causal_conv1d_bwd_bias(cuda_device::CudaDevice* device, types::C
 fn void execute_dropout(cuda_device::CudaDevice* device, types::CudaOp* op) {
 	TensorCore* result_tc = (TensorCore*)op.result;
 	TensorCore* input0_tc = (TensorCore*)op.inputs[0];
+	TensorCore* mask_tc = (TensorCore*)op.inputs[1];
 
 	int dtype = utils::dtype_from_datatype(result_tc.dtype());
 	ulong n = (ulong)result_tc.shape().size();
 
-	if (op.dropout.is_bwd) {
-		// Backward: regenerate mask from same seed, then apply
-		// inputs[0] = grad (only input — mask determined by seed alone)
+	// Allocate mask data if needed (mask is STABLE, not produced by another op)
+	if (!mask_tc.has_data()) { mask_tc.alloc_data(); }
 
-		char[] mask_buf = device.mem_alloc(U8, (usz)n);
-		char[] dummy_buf = device.mem_alloc(result_tc.dtype(), (usz)n);
+	// Generate fresh seed at execution time via stdlib RNG
+	ulong seed = ((ulong)rand(0x7FFFFFFF) << 32) | (ulong)rand(0x7FFFFFFF);
 
-		// Regenerate same mask (using grad as dummy input — mask depends on seed, not values)
-		kernels::cuda_nn_dropout_fwd(
-			dtype, device.get_stream(),
-			input0_tc.state.dense.data,
-			dummy_buf.ptr,
-			mask_buf.ptr,
-			n, op.dropout.p, op.dropout.seed
-		);
-
-		kernels::cuda_nn_dropout_bwd(
-			dtype, device.get_stream(),
-			input0_tc.state.dense.data,
-			mask_buf.ptr,
-			result_tc.state.dense.data,
-			n, op.dropout.p
-		);
-
-		device.mem_free(dummy_buf);
-		device.mem_free(mask_buf);
-	} else {
-		// Forward: generate mask and apply
-		char[] mask_buf = device.mem_alloc(U8, (usz)n);
-
-		kernels::cuda_nn_dropout_fwd(
-			dtype, device.get_stream(),
-			input0_tc.state.dense.data,
-			result_tc.state.dense.data,
-			mask_buf.ptr,
-			n, op.dropout.p, op.dropout.seed
-		);
-
-		device.mem_free(mask_buf);
-	}
+	kernels::cuda_nn_dropout_fwd(
+		dtype, device.get_stream(),
+		input0_tc.data_bytes().ptr, result_tc.data_bytes().ptr,
+		mask_tc.data_bytes().ptr, n, op.dropout.p, seed
+	);
 }

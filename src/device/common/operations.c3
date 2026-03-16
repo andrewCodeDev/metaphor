@@ -332,13 +332,11 @@ enum CausalConv1dOpType : char
 }
 
 /// Payload for dropout operation.
-/// Stores probability and seed for mask generation.
+/// Stores drop probability.  The mask is a tensor input (children[1]).
 struct DropoutPayload
 {
 	OpTag tag;
 	float p;          // drop probability (0..1)
-	ulong seed;       // RNG seed for mask generation
-	bool is_backward; // false=forward, true=backward
 	ulong hash;
 }
 

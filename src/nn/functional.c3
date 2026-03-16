@@ -411,12 +411,12 @@ fn tensor::Tensor? sum_all(tensor::Tensor input)
 
 // Dropout (dedicated kernel path)
 
-/// Global atomic seed counter for unique dropout masks per invocation.
-ulong dropout_seed_counter = 0;
-
 /// Inverted dropout: randomly zeros elements with probability `p` and
 /// scales remaining elements by `1/(1-p)` to maintain expected values.
-/// Each call uses a unique seed to generate a different mask.
+///
+/// The forward op generates a random binary mask tensor (STABLE persistence)
+/// and stores it as a second input.  Backward reads the same mask — no seed
+/// threading required.
 ///
 /// This operation is training-only — at inference time, callers should
 /// skip this function entirely (pass input through unchanged).
@@ -430,12 +430,17 @@ fn tensor::Tensor? dropout(tensor::Tensor input, float p)
 
 	tensor::Tensor result = tensor::tensor_from_core(result_core);
 
-	// Each forward call gets a unique seed so the mask changes every step
-	ulong seed = dropout_seed_counter++;
+	// Mask tensor (U8, 0 or 1) — filled by the forward executor.
+	// STABLE so it survives between forward and backward execution.
+	tensor_core::TensorCore* mask_core = tensor_ops::setup_result_core(
+		input.shape().slice(), g, U8, dev, null)!;
+	mask_core.flags.persistence.promote(STABLE);
 
-	op_payload::OpPayload payload = op_payload::op_payload_dropout(p, seed);
+	tensor::Tensor mask = tensor::tensor_from_core(mask_core);
 
-	g.register_op(payload, { input }, result);
+	op_payload::OpPayload payload = op_payload::op_payload_dropout(p);
+
+	g.register_op(payload, { input, mask }, result);
 
 	return result;
 }

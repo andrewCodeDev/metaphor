@@ -28,6 +28,7 @@ import metaphor::settings;
 
 import std::io;
 import std::sort;
+import std::collections::list;
 import libc;
 import metaphor::utils::swisstable;
 
@@ -533,6 +534,45 @@ fn void Graph.set_gradient_core(&self, tensor_core::TensorCore* core, tensor_cor
 	self.gradient_core_map.set((uptr)core, grad_core);
 }
 
+/// Collect all symbolic nodes reachable from a root tensor via DFS through children.
+fn usz collect_reachable_nodes(SymbolicChainMap* map, tensor_core::TensorCore* root, SymbolicNode*[] out)
+{
+	usz count = 0;
+	list::List{tensor_core::TensorCore*} stack;
+	stack.push(root);
+
+	while (stack.size > 0)
+	{
+		tensor_core::TensorCore* tc = stack.pop()!!;
+
+		SymbolicChain* chain = map.lookup(tc);
+		if (chain == null) continue;
+
+		for (SymbolicNode* node = chain.first; node != null; node = node.next)
+		{
+			// Deduplicate
+			bool seen = false;
+			for (usz i = 0; i < count; i++)
+			{
+				if (out[i] == node) { seen = true; break; }
+			}
+			if (seen) continue;
+
+			assert(count < out.len, "collect_reachable_nodes: buffer overflow");
+			out[count++] = node;
+
+			tensor::Tensor[] children = node.children.slice();
+			for (usz c = 0; c < children.len; c++)
+			{
+				stack.push(children[c].core());
+			}
+		}
+	}
+
+	stack.free();
+	return count;
+}
+
 <*
  Backward pass: propagate gradients from loss through the computation graph.
  Collects all symbolic nodes, sorts by seq descending (reverse topological),
@@ -549,7 +589,7 @@ fn void Graph.backward(&self, tensor_core::TensorCore* loss)
 	self.direction = Direction.BWD;
 	defer self.direction = Direction.FWD;
 
-	// Collect all nodes into a temporary buffer
+	// Collect only nodes reachable from the loss via DFS through children chains.
 	uint num_nodes = self.symbolic_chain_map.num_nodes();
 	if (num_nodes == 0) return;
 
@@ -570,7 +610,7 @@ fn void Graph.backward(&self, tensor_core::TensorCore* loss)
 	}
 	defer if (heap_allocated) { mem::free(buf.ptr); };
 
-	usz collected = self.symbolic_chain_map.collect_all_nodes(buf);
+	usz collected = collect_reachable_nodes(&self.symbolic_chain_map, loss, buf);
 
 	// Sort by seq descending (reverse topological order)
 	sort_nodes_descending(buf[:collected]);
@@ -591,6 +631,10 @@ fn void Graph.backward(&self, tensor_core::TensorCore* loss)
 
 		// Skip detached tensors
 		if (!node.result.attached()) { bwd_detached++; continue; }
+
+		// Skip nodes not reachable from the loss — no gradient on result
+		tensor_core::TensorCore* result_core = node.result.core();
+		if (self.get_gradient_core(result_core) == null) { continue; }
 
 		tensor::Tensor[] children = node.children.slice();
 

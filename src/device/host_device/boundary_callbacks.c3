@@ -23,6 +23,7 @@ import metaphor::device::host_device::kernels::cast;
 import metaphor::device::host_device::kernels::softmax;
 import metaphor::device::host_device::kernels::reduce;
 import metaphor::device::host_device::kernels::scaling;
+import metaphor::device::host_device::kernels::dropout;
 import std::core::mem::allocator;
 import std::io;
 
@@ -1147,15 +1148,12 @@ fn void compile_dropout(graph::Graph* g, cas::IREntry* entry)
 	operations::DropoutPayload* dp = &payload.dropout;
 
 	DropoutCallback* cb = allocator::new(g.allocator, DropoutCallback);
-	*cb = {
-		.p = dp.p,
-		.seed = dp.seed,
-		.is_backward = dp.is_backward,
-	};
+	*cb = { .p = dp.p, .mask = entry.inputs[1] };
 
 	TensorCorePtr[8] source_cores;
-	source_cores[0] = entry.inputs[0];
-	usz num_sources = 1;
+	source_cores[0] = entry.inputs[0]; // input
+	source_cores[1] = entry.inputs[1]; // mask
+	usz num_sources = 2;
 
 	g.add_execution_unit(
 		(any)cb,
@@ -1167,71 +1165,41 @@ fn void compile_dropout(graph::Graph* g, cas::IREntry* entry)
 struct DropoutCallback (Executable)
 {
 	float p;
-	ulong seed;
-	bool is_backward;
-}
-
-/// Simple splitmix64 PRNG for deterministic mask generation from seed.
-macro ulong splitmix64(ulong* state)
-{
-	*state += 0x9e3779b97f4a7c15;
-	ulong z = *state;
-	z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9;
-	z = (z ^ (z >> 27)) * 0x94d049bb133111eb;
-	return z ^ (z >> 31);
+	TensorCore* mask;  // owned mask tensor — freed on destroy
 }
 
 fn void DropoutCallback.execute(&self, TensorCorePtr[] sources, TensorCorePtr target) @dynamic
 {
 	TensorCore* tgt = target;
-	assert(tgt.state.class_ == CoreClass.DENSE);
-	void* dst_data = tgt.state.dense.data;
-	if (dst_data == null) { return; }
+	if (!tgt.has_data()) { return; }
 
+	TensorCore* src_tc = sources[0];
+	TensorCore* mask_tc = sources[1];
+	if (!src_tc.has_data()) { return; }
+
+	// Allocate mask data if needed (mask is STABLE, not produced by another op)
+	if (!mask_tc.has_data()) { mask_tc.alloc_data(); }
+
+	char[] dst = tgt.data_bytes();
+	char[] src = src_tc.data_bytes();
+	char[] mask = mask_tc.data_bytes();
 	usz n = tgt.shape().size();
-	float scale = 1.0f / (1.0f - self.p);
 
-	if (self.is_backward)
+	switch (tgt.dtype())
 	{
-		// Backward: regenerate mask from same seed, apply to gradient
-		TensorCore* grad_tc = sources[0];
-		assert(grad_tc.state.class_ == CoreClass.DENSE);
-
-		void* grad_data = grad_tc.state.dense.data;
-		if (grad_data == null) { return; }
-
-		// Regenerate mask using same seed (deterministic)
-		ulong rng_state = self.seed;
-		for (usz i = 0; i < n; i++)
-		{
-			ulong r = splitmix64(&rng_state);
-			// Use upper bits for uniform [0,1)
-			float u = (float)(r >> 40) / (float)(1 << 24);
-			bool keep = u >= self.p;
-			((float*)dst_data)[i] = keep ? ((float*)grad_data)[i] * scale : 0.0f;
-		}
-	}
-	else
-	{
-		// Forward: generate mask, apply inverted dropout
-		TensorCore* src_tc = sources[0];
-		assert(src_tc.state.class_ == CoreClass.DENSE);
-
-		void* src_data = src_tc.state.dense.data;
-		if (src_data == null) { return; }
-
-		ulong rng_state = self.seed;
-		for (usz i = 0; i < n; i++)
-		{
-			ulong r = splitmix64(&rng_state);
-			float u = (float)(r >> 40) / (float)(1 << 24);
-			bool keep = u >= self.p;
-			((float*)dst_data)[i] = keep ? ((float*)src_data)[i] * scale : 0.0f;
-		}
+		case F32:  dropout::dropout_fwd{float}((float*)src.ptr, (float*)dst.ptr, mask.ptr, n, self.p);
+		case F64:  dropout::dropout_fwd{double}((double*)src.ptr, (double*)dst.ptr, mask.ptr, n, self.p);
+		case F16:  dropout::dropout_fwd{float16}((float16*)src.ptr, (float16*)dst.ptr, mask.ptr, n, self.p);
+		case BF16: dropout::dropout_fwd{bfloat}((bfloat*)src.ptr, (bfloat*)dst.ptr, mask.ptr, n, self.p);
+		default:   unreachable("dropout: non-float dtype");
 	}
 }
 
-fn void DropoutCallback.destroy(&self) @dynamic { allocator::free(&graph::graph_alloc, self); }
+fn void DropoutCallback.destroy(&self) @dynamic
+{
+	if (self.mask != null) { self.mask.free_data(); }
+	allocator::free(&graph::graph_alloc, self);
+}
 
 fn bool dispatch_boundary_op(graph::Graph* g, cas::IREntry* entry)
 {

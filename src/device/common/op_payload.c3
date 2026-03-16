@@ -180,9 +180,9 @@ fn OpPayload op_payload_causal_conv1d(CausalConv1dOpType op_type)
 }
 
 /// Create a dropout payload.
-fn OpPayload op_payload_dropout(float p, ulong seed, bool is_backward = false)
+fn OpPayload op_payload_dropout(float p)
 {
-	return { .dropout = { .tag = DROPOUT, .p = p, .seed = seed, .is_backward = is_backward, .hash = 0 }};
+	return { .dropout = { .tag = DROPOUT, .p = p, .hash = 0 }};
 }
 
 /// Create a scatter_add payload.
@@ -312,7 +312,7 @@ fn tensor::Tensor? OpPayload.symbolic_backward(&self, usz child_idx, tensor::Ten
 		case RMS_NORM: return self.bwd_rms_norm(child_idx, children, upstream, grad);
 		case SELECTIVE_SCAN: return self.bwd_selective_scan(child_idx, children, upstream, grad);
 		case CAUSAL_CONV1D: return self.bwd_causal_conv1d(child_idx, children, upstream, grad);
-		case DROPOUT: return self.bwd_dropout(children, upstream, grad);
+		case DROPOUT: return self.bwd_dropout(child_idx, children, grad);
 		case GATHER:  return self.bwd_gather(child_idx, children, upstream);
 		case CAST:    return self.bwd_cast(children, upstream);
 		case RESHAPE: return self.bwd_reshape(children, grad);
@@ -930,26 +930,18 @@ fn tensor::Tensor? OpPayload.bwd_softmax(&self, tensor::Tensor[] args, tensor::T
 }
 
 /// Backward for dropout.
-/// Registers a new dropout op with the forward's seed, is_backward=true.
-/// Only passes the upstream gradient — the mask is determined by seed alone.
-fn tensor::Tensor? OpPayload.bwd_dropout(&self, tensor::Tensor[] args, tensor::Tensor upstream, tensor::Tensor grad)
+/// child 0 (input):  grad_input = grad * mask / (1 - p)
+/// child 1 (mask):   no gradient
+fn tensor::Tensor? OpPayload.bwd_dropout(&self, usz child_idx, tensor::Tensor[] children, tensor::Tensor grad)
 {
-	tensor::Tensor[] resolve_args = { grad };
-	graph::Graph* g = tensor_ops::resolve_graph(resolve_args, null);
-	device_reference::DeviceReference dev = tensor_ops::resolve_device(resolve_args, null)!;
+	if (child_idx != 0) return NO_GRADIENT~;
 
-	ulong[] shape_slice = grad.shape().slice();
-	tensor_core::TensorCore* result_core = tensor_ops::setup_result_core(
-		shape_slice, g, grad.dtype(), dev, null)!;
-	tensor::Tensor result = tensor::tensor_from_core(result_core);
-
-	// Backward payload: same seed/p, is_backward=true
-	OpPayload bwd_payload = op_payload_dropout(self.dropout.p, self.dropout.seed, true);
-
-	// Only input is the upstream gradient
-	g.register_op(bwd_payload, { grad }, result);
-
-	return result;
+	// mask is U8 (0 or 1); mixed int*float promotes to float
+	tensor::Tensor mask = children[1];
+	tensor::Tensor masked = tensor_ops::mul(grad, mask)!;
+	double scale = 1.0 / (1.0 - (double)self.dropout.p);
+	tensor::Tensor scale_t = masked.scalar_like(scale)!;
+	return tensor_ops::mul(masked, scale_t);
 }
 
 /// Backward for RMS normalization.

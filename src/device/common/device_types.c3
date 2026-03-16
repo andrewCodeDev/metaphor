@@ -188,8 +188,6 @@ struct ReduceMaxMinBwdOp {
 
 struct DropoutOp {
 	float p;
-	ulong seed;
-	bool is_bwd;
 }
 
 /// Internal representation of a compiled device operation.

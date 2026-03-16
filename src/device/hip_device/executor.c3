@@ -22,6 +22,7 @@ import std::io;
 import std::os::posix;
 import std::core::string;
 import std::core::mem::allocator;
+import std::math::random;
 import std::thread;
 
 // Helpers
@@ -1142,52 +1143,20 @@ fn void execute_causal_conv1d_bwd_bias(hip_device::HipDevice* device, types::Hip
 fn void execute_dropout(hip_device::HipDevice* device, types::HipOp* op) {
 	TensorCore* result_tc = (TensorCore*)op.result;
 	TensorCore* input0_tc = (TensorCore*)op.inputs[0];
+	TensorCore* mask_tc = (TensorCore*)op.inputs[1];
 
 	int dtype = utils::dtype_from_datatype(result_tc.dtype());
 	ulong n = (ulong)result_tc.shape().size();
 
-	if (op.dropout.is_bwd) {
-		// Backward: regenerate mask from same seed, then apply
-		// inputs[0] = grad (only input — mask determined by seed alone)
+	// Allocate mask data if needed (mask is STABLE, not produced by another op)
+	if (!mask_tc.has_data()) { mask_tc.alloc_data(); }
 
-		// Allocate temp mask
-		char[] mask_buf = device.mem_alloc(U8, (usz)n);
+	// Generate fresh seed at execution time via stdlib RNG
+	ulong seed = ((ulong)rand(0x7FFFFFFF) << 32) | (ulong)rand(0x7FFFFFFF);
 
-		// Regenerate the same mask by running forward kernel with grad as dummy input
-		// (mask is determined by seed, not input values — we discard the output)
-		char[] dummy_buf = device.mem_alloc(result_tc.dtype(), (usz)n);
-		kernels::hip_nn_dropout_fwd(
-			dtype, device.get_stream(),
-			input0_tc.state.dense.data,  // grad data as dummy input
-			dummy_buf.ptr,
-			mask_buf.ptr,
-			n, op.dropout.p, op.dropout.seed
-		);
-
-		// Apply backward: grad_input = grad * mask / (1 - p)
-		kernels::hip_nn_dropout_bwd(
-			dtype, device.get_stream(),
-			input0_tc.state.dense.data,
-			mask_buf.ptr,
-			result_tc.state.dense.data,
-			n, op.dropout.p
-		);
-
-		device.mem_free(dummy_buf);
-		device.mem_free(mask_buf);
-	} else {
-		// Forward: generate mask and apply
-		usz mask_bytes = (usz)n;
-		char[] mask_buf = device.mem_alloc(U8, (usz)n);
-
-		kernels::hip_nn_dropout_fwd(
-			dtype, device.get_stream(),
-			input0_tc.state.dense.data,
-			result_tc.state.dense.data,
-			mask_buf.ptr,
-			n, op.dropout.p, op.dropout.seed
-		);
-
-		device.mem_free(mask_buf);
-	}
+	kernels::hip_nn_dropout_fwd(
+		dtype, device.get_stream(),
+		input0_tc.data_bytes().ptr, result_tc.data_bytes().ptr,
+		mask_tc.data_bytes().ptr, n, op.dropout.p, seed
+	);
 }
