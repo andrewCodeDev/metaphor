@@ -353,12 +353,7 @@ fn void ExecutionSequence.offload_tensor(&self, TensorCorePtr core)
 	// Skip if no data to offload
 	if (!tc.has_data()) { return; }
 
-	// Only support dense tensors for offloading
-	assert(tc.state.class_ == DENSE,
-		"Can only offload dense tensors");
-
-	usz byte_size = (usz)tc.state.dense.byte_size;
-	char[] device_data = ((char*)tc.state.dense.data)[:byte_size];
+	char[] device_data = tc.data_bytes();
 
 	// Allocate or reuse CPU buffer
 	OffloadBuffer buf;
@@ -366,20 +361,19 @@ fn void ExecutionSequence.offload_tensor(&self, TensorCorePtr core)
 	{
 		buf = existing;
 		// Realloc if size changed
-		if (buf.len != byte_size)
+		if (buf.len != device_data.len)
 		{
 			allocator::free(self.allocator, buf);
-			buf = allocator::alloc_array(self.allocator, char, byte_size);
+			buf = allocator::alloc_array(self.allocator, char, device_data.len);
 		}
 	}
 	else
 	{
-		buf = allocator::alloc_array(self.allocator, char, byte_size);
+		buf = allocator::alloc_array(self.allocator, char, device_data.len);
 	}
 
 	// DtoH copy
-	char[] host_dst = buf;
-	tc.device.mem_transfer(device_data, host_dst, DTOH);
+	tc.device.mem_transfer(device_data, buf, DTOH);
 
 	// Store in map
 	self.offload_buffers.set((uptr)core, buf);
@@ -402,14 +396,9 @@ fn void ExecutionSequence.restore_tensor(&self, TensorCorePtr core) @private
 
 	OffloadBuffer buf = self.offload_buffers.get((uptr)core)!!;
 
-	// Allocate device memory
+	// Allocate device memory and HtoD copy
 	tc.alloc_data();
-
-	char[] host_src = buf;
-	char[] device_dst = ((char*)tc.state.dense.data)[:buf.len];
-
-	// HtoD copy
-	tc.device.mem_transfer(host_src, device_dst, HTOD);
+	tc.device.mem_transfer(buf, tc.data_bytes(), HTOD);
 
 	// Keep CPU buffer and map entry for reuse on next offload cycle
 	stats_restored++;
