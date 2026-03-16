@@ -18,7 +18,6 @@
 module metaphor::examples::embedding;
 import metaphor::device::host_device;
 import metaphor::device::device_reference;
-import metaphor::graph;
 import metaphor::tensor;
 import metaphor::nn::loss;
 import metaphor::nn::optimizer;
@@ -81,9 +80,6 @@ fn void main()
 	cpu.init();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
-
-	graph::init();
-	defer graph::deinit();
 
 	sampling::seed(42);
 

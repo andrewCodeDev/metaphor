@@ -123,12 +123,24 @@ fn Graph* get()
 	return current_graph;
 }
 
+enum DefaultPersistence
+{
+	UNSTABLE,
+	STABLE,
+}
+
 /// Set the default persistence for the current graph.
 /// Affects auto-promotion of tensors entering the execution sequence.
 /// Can be called at any time — only affects future tensor promotions.
-fn void set_default_persistence(tensor_core::Persistence p)
+/// Only UNSTABLE and STABLE are valid defaults — NONE and LEAF are
+/// structural properties set per-tensor, not graph-wide defaults.
+fn void set_default_persistence(DefaultPersistence p)
 {
-	get().flags.default_persistence = p;
+	switch (p)
+	{
+		case UNSTABLE: get().flags.default_persistence = tensor_core::Persistence.UNSTABLE;
+		case STABLE:   get().flags.default_persistence = tensor_core::Persistence.STABLE;
+	}
 }
 
 /// Create or swap in a subgraph for the duration of the body.

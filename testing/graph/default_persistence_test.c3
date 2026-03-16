@@ -34,7 +34,7 @@ fn void test_auto_promotion_unstable_mode() @test
 
 	graph::@subgraph()
 	{
-		graph::set_default_persistence(Persistence.UNSTABLE);
+		graph::set_default_persistence(UNSTABLE);
 
 		Tensor a = tensor::empty(F32, dev, { 4, 4 })!!;
 		a.fill(1.0);
@@ -60,7 +60,7 @@ fn void test_auto_promotion_stable_mode() @test
 
 	graph::@subgraph()
 	{
-		graph::set_default_persistence(Persistence.STABLE);
+		graph::set_default_persistence(STABLE);
 
 		Tensor a = tensor::empty(F32, dev, { 4, 4 })!!;
 		a.fill(1.0);
@@ -89,7 +89,7 @@ fn void test_user_unstable_in_stable_mode() @test
 
 	graph::@subgraph()
 	{
-		graph::set_default_persistence(Persistence.STABLE);
+		graph::set_default_persistence(STABLE);
 
 		Tensor a = tensor::empty(F32, dev, { 4, 4 })!!;
 		a.fill(1.0);
@@ -118,7 +118,7 @@ fn void test_user_stable_survives_unstable_mode() @test
 
 	graph::@subgraph()
 	{
-		graph::set_default_persistence(Persistence.UNSTABLE);
+		graph::set_default_persistence(UNSTABLE);
 
 		Tensor a = tensor::empty(F32, dev, { 4, 4 })!!;
 		a.fill(1.0);
@@ -147,7 +147,7 @@ fn void test_unstable_intermediate_freed_in_stable_mode() @test
 
 	graph::@subgraph()
 	{
-		graph::set_default_persistence(Persistence.STABLE);
+		graph::set_default_persistence(STABLE);
 
 		Tensor a = tensor::empty(F32, dev, { 4, 4 })!!;
 		a.fill(1.0);
@@ -169,7 +169,7 @@ fn void test_subgraph_inherits_stable() @test
 {
 	graph::@subgraph()
 	{
-		graph::set_default_persistence(Persistence.STABLE);
+		graph::set_default_persistence(STABLE);
 
 		graph::@subgraph()
 		{
@@ -184,7 +184,7 @@ fn void test_subgraph_inherits_unstable() @test
 {
 	graph::@subgraph()
 	{
-		graph::set_default_persistence(Persistence.UNSTABLE);
+		graph::set_default_persistence(UNSTABLE);
 
 		graph::@subgraph()
 		{
@@ -234,14 +234,14 @@ fn void test_set_default_persistence_setter() @test
 {
 	graph::@subgraph()
 	{
-		graph::set_default_persistence(Persistence.UNSTABLE);
+		graph::set_default_persistence(UNSTABLE);
 		Graph* g = graph::get();
 		assert(g.flags.default_persistence == Persistence.UNSTABLE);
 
-		graph::set_default_persistence(Persistence.STABLE);
+		graph::set_default_persistence(STABLE);
 		assert(g.flags.default_persistence == Persistence.STABLE);
 
-		graph::set_default_persistence(Persistence.UNSTABLE);
+		graph::set_default_persistence(UNSTABLE);
 		assert(g.flags.default_persistence == Persistence.UNSTABLE);
 	};
 }

@@ -7,6 +7,10 @@ build/
 .claude/
 CLAUDE.md
 
+# Local machine config (generated from project.json.in)
+project.json
+c3lsp.json
+
 # CMake build artifacts (CUDA)
 cmake-build/
 build_cuda/

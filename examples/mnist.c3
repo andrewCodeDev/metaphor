@@ -203,9 +203,6 @@ fn void main()
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
-	graph::init();
-	defer graph::deinit();
-
 	sampling::seed(42);
 
 	String data_dir = "data";
@@ -245,7 +242,7 @@ fn void main()
 	io::printfn("Training batches: %d\n", num_batches);
 
 	// Use stable persistence so backward pass can reuse forward intermediates.
-	graph::set_default_persistence(tensor_core::Persistence.STABLE);
+	graph::set_default_persistence(STABLE);
 
 	// Training loop with timing
 	io::printfn("Training...");

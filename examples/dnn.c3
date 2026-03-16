@@ -110,9 +110,6 @@ fn void main()
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
-	graph::init();
-	defer graph::deinit();
-
 	sampling::seed(42);
 
 	io::printfn("\n=== DNN Example ===");

@@ -50,9 +50,6 @@ fn void main()
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
-	graph::init();
-	defer graph::deinit();
-
 	io::printfn("\n=== Least-Squares Solver ===");
 	io::printfn("Samples: %d", NUM_SAMPLES);
 	io::printfn("Input dim: %d", INPUT_DIM);

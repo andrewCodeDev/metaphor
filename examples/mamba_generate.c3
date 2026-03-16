@@ -1087,7 +1087,7 @@ fn void main(String[] args)
 
 	// Use stable persistence so state tensors are preserved across
 	// graph executions instead of being freed after their last consumer.
-	graph::set_default_persistence(tensor_core::Persistence.STABLE);
+	graph::set_default_persistence(STABLE);
 
 	// 1. Select and init model
 	MambaConfig cfg = MAMBA_130M;
