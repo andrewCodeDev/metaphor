@@ -28,6 +28,7 @@ import metaphor::settings;
 
 import std::io;
 import std::sort;
+import libc;
 import metaphor::utils::swisstable;
 
 alias DataRefcountMap = hash_map::HashMap {uptr, uint};
@@ -92,6 +93,32 @@ tlocal Graph* current_graph;
 /// Thread-local root graph pointer, set once by init(). Never changes.
 /// Used by export() to move tensors out of subgraphs.
 tlocal Graph* root_graph;
+
+// Subgraph panic guard
+//
+// Each @subgraph sets up its own setjmp. If a panic fires inside the body,
+// a local panic handler longjmps back to the subgraph frame, which cleans
+// up its own graph, restores current_graph to the parent, and re-raises
+// the panic to the next level. Each frame is self-contained — no global state.
+
+alias PanicFn = fn void(String message, String file, String function, uint line);
+
+// Thread-local state for the current subgraph's panic handler.
+// The handler stashes the panic info here, then longjmps back to the frame.
+tlocal libc::JmpBuf* subgraph_jmpbuf;
+tlocal String subgraph_panic_message;
+tlocal String subgraph_panic_file;
+tlocal String subgraph_panic_function;
+tlocal uint subgraph_panic_line;
+
+fn void subgraph_panic_handler(String message, String file, String function, uint line)
+{
+	subgraph_panic_message = message;
+	subgraph_panic_file = file;
+	subgraph_panic_function = function;
+	subgraph_panic_line = line;
+	libc::longjmp(subgraph_jmpbuf, 1);
+}
 
 /// Initialize the global graph with explicit flags.
 /// If not called, get() will lazily initialize with defaults.
@@ -181,12 +208,37 @@ macro void @subgraph(Flags flags = DEFAULT_FLAGS, Graph* dst = null; @body())
 		active = &sub;
 	}
 	current_graph = active;
-	defer
+
+	// Panic guard — each frame saves/restores its own context
+	libc::JmpBuf jmpbuf;
+	libc::JmpBuf* outer_jmpbuf = subgraph_jmpbuf;
+	PanicFn outer_panic = builtin::panic;
+
+	subgraph_jmpbuf = &jmpbuf;
+	builtin::panic = &subgraph_panic_handler;
+
+	bool panicked = libc::setjmp(&jmpbuf) != 0;
+
+	if (!panicked)
 	{
-		if (dst == null) { sub.deinit(); }
-		current_graph = parent;
+		@body();
 	}
-	@body();
+
+	// Cleanup runs either way — not in a defer (longjmp skips those)
+	if (dst == null) { sub.deinit(); }
+	current_graph = parent;
+	builtin::panic = outer_panic;
+	subgraph_jmpbuf = outer_jmpbuf;
+
+	// Re-raise if we caught a panic
+	if (panicked)
+	{
+		builtin::panic(
+			subgraph_panic_message,
+			subgraph_panic_file,
+			subgraph_panic_function,
+			subgraph_panic_line);
+	}
 }
 
 /// Export a tensor from the current (sub)graph to the root global graph.
