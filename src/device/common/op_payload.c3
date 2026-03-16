@@ -438,7 +438,44 @@ fn tensor::Tensor? OpPayload.bwd_einsum(&self, usz child_idx, tensor::Tensor[] a
 		}
 	}
 
-	// MUL and other ops: dA = einsum(dC, B), dB = einsum(A, dC)
+	// MAX: d/da max(a, b) = grad * heaviside(a - b), d/db = grad * heaviside(b - a)
+	// MIN: d/da min(a, b) = grad * heaviside(b - a), d/db = grad * heaviside(a - b)
+	if (self.einsum.inner == operations::BinaryOp.MAX || self.einsum.inner == operations::BinaryOp.MIN)
+	{
+		char[] target_indices = child_idx == 0 ? a_indices : b_indices;
+
+		// For MAX child 0: heaviside(a - b) = 1 where a >= b
+		// For MAX child 1: heaviside(b - a) = 1 where b >= a
+		// For MIN: swap the arguments
+		tensor::Tensor diff;
+		bool is_max = (self.einsum.inner == operations::BinaryOp.MAX);
+		if ((is_max && child_idx == 0) || (!is_max && child_idx == 1))
+		{
+			diff = backward_helpers::combine_with_broadcast(args[0], args[1], operations::BinaryOp.SUB)!;
+		}
+		else
+		{
+			diff = backward_helpers::combine_with_broadcast(args[1], args[0], operations::BinaryOp.SUB)!;
+		}
+		tensor::Tensor mask = backward_helpers::map_runtime(diff, operations::UnaryOp.HEAVISIDE)!;
+		tensor::Tensor masked_grad = backward_helpers::combine_with_broadcast(grad, mask, operations::BinaryOp.MUL)!;
+
+		if (indices_equal(out_indices, target_indices))
+		{
+			return masked_grad;
+		}
+		else
+		{
+			index_expr::IndexExpr reduce_expr;
+			reduce_expr.has_ellipsis = false;
+			reduce_expr.num_inputs = 1;
+			backward_helpers::copy_indices(&reduce_expr.input0, &reduce_expr.input_lens[0], out_indices);
+			backward_helpers::copy_indices(&reduce_expr.output, &reduce_expr.output_len, target_indices);
+			return backward_helpers::reduce_runtime(masked_grad, &reduce_expr, operations::BinaryOp.ADD);
+		}
+	}
+
+	// MUL: dA = einsum(dC, B), dB = einsum(A, dC)
 	// Build expanded index arrays (handling ellipsis if needed)
 	char[8] exp_a;
 	char[8] exp_b;

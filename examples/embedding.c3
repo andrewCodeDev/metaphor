@@ -25,7 +25,6 @@ import metaphor::nn::optimizer;
 import metaphor::rtti;
 import metaphor::utils::sampling;
 import std::io;
-import libc;
 
 alias Tensor = tensor::Tensor;
 alias DeviceReference = device_reference::DeviceReference;
@@ -125,9 +124,7 @@ fn void main()
 	Tensor input_embeddings = embedding_table.gather(0, input_ids)!!;
 
 	Tensor pooled = input_embeddings.reduce("ijk->ik")!!;
-	Tensor seq_len_scalar = tensor::constant(
-		Datatype.F32, dev, { 1 }, (float)SEQ_LEN)!!;
-	Tensor mean_pooled = pooled.div(seq_len_scalar)!!;
+	Tensor mean_pooled = pooled / (float)SEQ_LEN;
 
 	Tensor predicted = mean_pooled.matmul(projection)!!.stable();
 
@@ -181,28 +178,17 @@ fn void main()
 	io::printfn("Training...");
 	io::printfn("----------------------------------------");
 
-	graph::Graph* g = graph::get();
-
 	for (usz epoch = 0; epoch < NUM_EPOCHS; epoch++)
 	{
-		{
-			char[] dst = input_ids.value_bytes();
-			libc::memcpy(dst.ptr, &input_tokens[0],
-				(usz)(BATCH_SIZE * SEQ_LEN) * ulong.sizeof);
-		}
-		{
-			char[] dst = target_ids.value_bytes();
-			libc::memcpy(dst.ptr, &target_token_ids[0],
-				(usz)BATCH_SIZE * ulong.sizeof);
-		}
+		input_ids.set(input_tokens);
+		target_ids.set(target_token_ids);
 
-		g.advance_generation();
 		mse.collect()!!;
 		optim.step();
 
-		char[] loss_bytes = mse.value_bytes();
-		float* lp = (float*)loss_bytes.ptr;
-		io::printfn("Epoch %3d: loss = %.6f", epoch + 1, lp[0]);
+		float loss_val;
+		mse.get(&loss_val);
+		io::printfn("Epoch %3d: loss = %.6f", epoch + 1, loss_val);
 	}
 
 	io::printfn("----------------------------------------");
@@ -212,12 +198,11 @@ fn void main()
 	io::printfn("Inference demo:");
 	io::printfn("  Input: \"hello wo\"");
 
-	g.advance_generation();
 	predicted.collect()!!;
-	char[] pred_bytes = predicted.value_bytes();
-	float* pp = (float*)pred_bytes.ptr;
+	float[4] pred_first;
+	predicted.get(&pred_first);
 	io::printfn("  Predicted embedding (first 4 dims): [%.4f, %.4f, %.4f, %.4f]",
-		pp[0], pp[1], pp[2], pp[3]);
+		pred_first[0], pred_first[1], pred_first[2], pred_first[3]);
 
 	io::printfn("\nDone!");
 }

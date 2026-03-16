@@ -111,12 +111,12 @@ fn void main()
 	// Trainable weight [INPUT_DIM, OUTPUT_DIM] — random init
 	Tensor weight = tensor::empty(Datatype.F32, dev, { INPUT_DIM, OUTPUT_DIM })!!.enable_grad();
 	{
-		char[] wb = weight.value_bytes();
-		float* wp = (float*)wb.ptr;
+		float[INPUT_DIM * OUTPUT_DIM] w_init;
 		for (usz i = 0; i < (usz)(INPUT_DIM * OUTPUT_DIM); i++)
 		{
-			wp[i] = (rng.float01() - 0.5) * 0.2;
+			w_init[i] = (rng.float01() - 0.5) * 0.2;
 		}
+		weight.set(w_init);
 	}
 
 	// Trainable bias [OUTPUT_DIM] — zero init
@@ -130,7 +130,7 @@ fn void main()
 	Tensor target = tensor::@from_data(dev, { NUM_SAMPLES, OUTPUT_DIM }, &y_data)!!;
 
 	// Forward: y_pred = X @ W + b
-	Tensor pred = input.matmul(weight)!!.add(bias)!!;
+	Tensor pred = input.matmul(weight)!! + bias;
 
 	// Loss: MSE
 	Tensor mse = loss::mse_loss(pred, target)!!.stable();
@@ -151,18 +151,19 @@ fn void main()
 	io::printfn("Training...");
 	io::printfn("----------------------------------------");
 
-	graph::Graph* g = graph::get();
-
 	for (usz epoch = 0; epoch < NUM_EPOCHS; epoch++)
 	{
-		g.advance_generation();
 		mse.collect()!!;
 		optim.step();
+		// Input data is fixed, so manually mark a parameter as dirty to
+		// trigger re-evaluation. Normally, calling .set() with new data
+		// each iteration does this automatically.
+		graph::notify_mutation(weight);
 
 		if ((epoch + 1) % 20 == 0 || epoch == 0)
 		{
-			char[] lb = mse.value_bytes();
-			float loss_val = ((float*)lb.ptr)[0];
+			float loss_val;
+			mse.get(&loss_val);
 			io::printfn("Epoch %4d: loss = %f", epoch + 1, loss_val);
 		}
 	}
@@ -171,16 +172,16 @@ fn void main()
 	io::printfn("Training complete!\n");
 
 	// Print learned parameters
-	char[] final_w = weight.value_bytes();
-	float* fw = (float*)final_w.ptr;
+	float[INPUT_DIM * OUTPUT_DIM] fw;
+	weight.get(&fw);
 	io::printfn("Learned weights: %.4f %.4f %.4f %.4f",
 		fw[0], fw[1], fw[2], fw[3]);
 
-	char[] final_b = bias.value_bytes();
-	float* fb = (float*)final_b.ptr;
-	io::printfn("Learned bias:    %.4f", fb[0]);
+	float bias_val;
+	bias.get(&bias_val);
+	io::printfn("Learned bias:    %.4f", bias_val);
 
-	char[] final_loss = mse.value_bytes();
-	float* fl = (float*)final_loss.ptr;
-	io::printfn("Final MSE loss:  %.6f", fl[0]);
+	float loss_final;
+	mse.get(&loss_final);
+	io::printfn("Final MSE loss:  %.6f", loss_final);
 }

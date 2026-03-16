@@ -26,7 +26,6 @@ import metaphor::nn::optimizer;
 import metaphor::rtti;
 import metaphor::utils::sampling;
 import std::io;
-import libc;
 
 alias Tensor = tensor::Tensor;
 alias DeviceReference = device_reference::DeviceReference;
@@ -43,8 +42,8 @@ const ulong EMBED_DIM = 16;
 const ulong HIDDEN_DIM = 8;
 const ulong SEQ_LEN = 6;
 const ulong BATCH_SIZE = 4;
-const float LEARNING_RATE = 0.01;
-const usz NUM_EPOCHS = 20;
+const float LEARNING_RATE = 0.1;
+const usz NUM_EPOCHS = 50;
 
 // ============================================================================
 // Main
@@ -99,14 +98,12 @@ fn void main()
 
 	// 2. Mean pool: reduce sum over seq_len, then divide
 	Tensor summed = embeddings.reduce("ijk->ik")!!;
-	Tensor seq_scalar = tensor::constant(
-		Datatype.F32, dev, { 1 }, (float)SEQ_LEN)!!;
-	Tensor pooled = summed.div(seq_scalar)!!;
+	Tensor pooled = summed / (float)SEQ_LEN;
 
 	// 3. MLP: Linear(embed_dim -> hidden) -> ReLU -> Linear(hidden -> 1)
-	Tensor z0 = pooled.matmul(w0)!!.add(b0)!!;
+	Tensor z0 = pooled.matmul(w0)!! + b0;
 	Tensor a0 = z0.relu()!!;
-	Tensor logits = a0.matmul(w1)!!.add(b1)!!.stable();
+	Tensor logits = (a0.matmul(w1)!! + b1).stable();
 
 	// 4. Sigmoid
 	Tensor output = logits.sigmoid()!!.stable();
@@ -153,43 +150,31 @@ fn void main()
 		NUM_EPOCHS, BATCH_SIZE, LEARNING_RATE);
 	io::printfn("----------------------------------------");
 
-	graph::Graph* g = graph::get();
-
 	for (usz epoch = 0; epoch < NUM_EPOCHS; epoch++)
 	{
 		// Fill input tokens (u64)
-		{
-			char[] dst = input_ids.value_bytes();
-			libc::memcpy(dst.ptr, &token_data[0],
-				(usz)(BATCH_SIZE * SEQ_LEN) * ulong.sizeof);
-		}
+		input_ids.set(token_data);
 		// Fill target labels (f32, reshaped to [batch, 1])
-		{
-			char[] dst = target.value_bytes();
-			libc::memcpy(dst.ptr, &label_data[0],
-				(usz)BATCH_SIZE * float.sizeof);
-		}
+		target.set(label_data);
 
-		g.advance_generation();
 		bce.collect()!!;
 		optim.step();
 
-		char[] lb = bce.value_bytes();
-		float loss_val = ((float*)lb.ptr)[0];
-
 		if ((epoch + 1) % 5 == 0 || epoch == 0)
 		{
+			float loss_val;
+			bce.get(&loss_val);
 			io::printfn("Epoch %3d: loss = %.6f", epoch + 1, loss_val);
 		}
+
 	}
 
 	io::printfn("----------------------------------------");
 
 	// Print final predictions
-	g.advance_generation();
 	output.collect()!!;
-	char[] out_bytes = output.value_bytes();
-	float* probs = (float*)out_bytes.ptr;
+	float[BATCH_SIZE] probs;
+	output.get(&probs);
 
 	io::printfn("\nPredictions (prob of positive):");
 	for (usz i = 0; i < (usz)BATCH_SIZE; i++)

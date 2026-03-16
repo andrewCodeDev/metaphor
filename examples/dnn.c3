@@ -8,7 +8,7 @@
 //! - Kaiming weight initialization
 //! - MSE loss from nn::loss
 //! - SGD optimizer from nn::optimizer
-//! - Training loop with advance_generation / collect / step
+//! - Training loop with collect / step
 //!
 
 module metaphor::examples::dnn;
@@ -21,7 +21,6 @@ import metaphor::nn::optimizer;
 import metaphor::rtti;
 import metaphor::utils::sampling;
 import std::io;
-import libc;
 
 alias Tensor = tensor::Tensor;
 alias DeviceReference = device_reference::DeviceReference;
@@ -65,7 +64,7 @@ fn Linear linear_init(
 	Tensor bias = tensor::empty(Datatype.F32, dev, { out_features })!!.enable_grad();
 	bias.fill(0.0);
 
-	Tensor output = input.matmul(weight)!!.add(bias)!!;
+	Tensor output = input.matmul(weight)!! + bias;
 
 	return { .weight = weight, .bias = bias, .output = output };
 }
@@ -164,14 +163,8 @@ fn void main()
 	};
 
 	// Feed data into tensors
-	{
-		char[] xb = x.value_bytes();
-		libc::memcpy(xb.ptr, &x_data[0], (usz)(BATCH_SIZE * INPUT_DIM) * float.sizeof);
-	}
-	{
-		char[] tb = target.value_bytes();
-		libc::memcpy(tb.ptr, &y_data[0], (usz)(BATCH_SIZE * OUTPUT_DIM) * float.sizeof);
-	}
+	x.set(x_data);
+	target.set(y_data);
 
 	usz total_params =
 		(usz)(INPUT_DIM * HIDDEN1 + HIDDEN1 +
@@ -183,18 +176,19 @@ fn void main()
 	io::printfn("Training...");
 	io::printfn("----------------------------------------");
 
-	graph::Graph* g = graph::get();
-
 	for (usz epoch = 0; epoch < NUM_EPOCHS; epoch++)
 	{
-		g.advance_generation();
 		mse.collect()!!;
 		optim.step();
+		// Input data is fixed, so manually mark a parameter as dirty to
+		// trigger re-evaluation. Normally, calling .set() with new data
+		// each iteration does this automatically.
+		graph::notify_mutation(model.hidden[0].weight);
 
 		if ((epoch + 1) % 20 == 0 || epoch == 0)
 		{
-			char[] lb = mse.value_bytes();
-			float loss_val = ((float*)lb.ptr)[0];
+			float loss_val;
+			mse.get(&loss_val);
 			io::printfn("Epoch %4d: loss = %f", epoch + 1, loss_val);
 		}
 	}
@@ -203,10 +197,9 @@ fn void main()
 	io::printfn("Training complete!\n");
 
 	// Print predictions
-	g.advance_generation();
 	model.prediction.collect()!!;
-	char[] pred_bytes = model.prediction.value_bytes();
-	float* pp = (float*)pred_bytes.ptr;
+	float[BATCH_SIZE * OUTPUT_DIM] pp;
+	model.prediction.get(&pp);
 
 	io::printfn("Predictions:");
 	for (usz i = 0; i < (usz)BATCH_SIZE; i++)

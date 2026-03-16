@@ -16,6 +16,26 @@
         "metaphor": {
             "type": "static-lib"
         },
+        "least_squares": {
+            "type": "executable",
+            "sources": ["src/*", "src/cas/**", "src/codegen/**", "src/device/*", "src/device/common/**", "src/device/host_device/**", "src/graph/**", "src/mem/**", "src/nn/**", "src/tensor/**", "src/testing/**", "src/tokenizers/**", "src/utils/**", "src/device/hip_device/**", "examples/least_squares.c3"]
+        },
+        "dnn": {
+            "type": "executable",
+            "sources": ["src/*", "src/cas/**", "src/codegen/**", "src/device/*", "src/device/common/**", "src/device/host_device/**", "src/graph/**", "src/mem/**", "src/nn/**", "src/tensor/**", "src/testing/**", "src/tokenizers/**", "src/utils/**", "src/device/hip_device/**", "examples/dnn.c3"]
+        },
+        "embedding": {
+            "type": "executable",
+            "sources": ["src/*", "src/cas/**", "src/codegen/**", "src/device/*", "src/device/common/**", "src/device/host_device/**", "src/graph/**", "src/mem/**", "src/nn/**", "src/tensor/**", "src/testing/**", "src/tokenizers/**", "src/utils/**", "src/device/hip_device/**", "examples/embedding.c3"]
+        },
+        "binary_sentiment": {
+            "type": "executable",
+            "sources": ["src/*", "src/cas/**", "src/codegen/**", "src/device/*", "src/device/common/**", "src/device/host_device/**", "src/graph/**", "src/mem/**", "src/nn/**", "src/tensor/**", "src/testing/**", "src/tokenizers/**", "src/utils/**", "src/device/hip_device/**", "examples/binary_sentiment.c3"]
+        },
+        "mnist": {
+            "type": "executable",
+            "sources": ["src/*", "src/cas/**", "src/codegen/**", "src/device/*", "src/device/common/**", "src/device/host_device/**", "src/graph/**", "src/mem/**", "src/nn/**", "src/tensor/**", "src/testing/**", "src/tokenizers/**", "src/utils/**", "src/device/hip_device/**", "examples/mnist.c3"]
+        },
         "mnist_cuda": {
             "type": "executable",
             "sources": ["src/*", "src/cas/**", "src/codegen/**", "src/device/*", "src/device/common/**", "src/device/host_device/**", "src/graph/**", "src/mem/**", "src/nn/**", "src/tensor/**", "src/testing/**", "src/tokenizers/**", "src/utils/**", "src/device/hip_device/**", "src/device/cuda_device/**", "examples/mnist_cuda.c3"]

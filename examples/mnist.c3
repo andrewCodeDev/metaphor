@@ -103,13 +103,13 @@ fn MnistModel build_model(DeviceReference dev)
 
 	// === Forward Pass Graph ===
 
-	Tensor z0 = input.matmul(w0)!!.add(b0)!!.stable();
+	Tensor z0 = (input.matmul(w0)!! + b0).stable();
 	Tensor a0 = z0.relu()!!;
 
-	Tensor z1 = a0.matmul(w1)!!.add(b1)!!;
+	Tensor z1 = a0.matmul(w1)!! + b1;
 	Tensor a1 = z1.relu()!!;
 
-	Tensor logits = a1.matmul(w2)!!.add(b2)!!;
+	Tensor logits = a1.matmul(w2)!! + b2;
 
 	// === Loss ===
 	Tensor loss_t = loss::softmax_cross_entropy(logits, target)!!.stable();
@@ -164,7 +164,6 @@ fn float compute_accuracy(MnistModel* model, DatasetReader* reader)
 {
 	usz correct = 0;
 	usz total = 0;
-	graph::Graph* g = graph::get();
 
 	reader.reset();
 	while (dataset::Batch* batch = reader.next())
@@ -172,12 +171,12 @@ fn float compute_accuracy(MnistModel* model, DatasetReader* reader)
 		model.input.bind(batch.images);
 		model.logits.collect()!!;
 
-		char[] logit_bytes = model.logits.value_bytes();
-		float* logit_ptr = (float*)logit_bytes.ptr;
-		usz logit_count = logit_bytes.len / float.sizeof;
+		float[BATCH_SIZE * OUTPUT_DIM] logit_buf;
+		model.logits.get(&logit_buf);
+		float* lp = &logit_buf[0];
 
 		correct += count_correct(
-			logit_ptr[:logit_count],
+			lp[:BATCH_SIZE * OUTPUT_DIM],
 			batch.labels,
 			batch.size,
 			(usz)OUTPUT_DIM);
@@ -209,7 +208,7 @@ fn void main()
 
 	sampling::seed(42);
 
-	ZString data_dir = (ZString)"data";
+	String data_dir = "data";
 
 	io::printfn("\n=== MNIST Training Example ===");
 	io::printfn("Batch size: %d", BATCH_SIZE);
@@ -251,8 +250,6 @@ fn void main()
 	// Training loop with timing
 	io::printfn("Training...");
 	io::printfn("----------------------------------------");
-
-	graph::Graph* g = graph::get();
 
 	NanoDuration total_train_ns = 0;
 	NanoDuration total_forward_ns = 0;

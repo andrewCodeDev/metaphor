@@ -16,6 +16,26 @@
         "metaphor": {
             "type": "static-lib"
         },
+        "least_squares": {
+            "type": "executable",
+            "sources": [@METAPHOR_SOURCES@, "examples/least_squares.c3"]
+        },
+        "dnn": {
+            "type": "executable",
+            "sources": [@METAPHOR_SOURCES@, "examples/dnn.c3"]
+        },
+        "embedding": {
+            "type": "executable",
+            "sources": [@METAPHOR_SOURCES@, "examples/embedding.c3"]
+        },
+        "binary_sentiment": {
+            "type": "executable",
+            "sources": [@METAPHOR_SOURCES@, "examples/binary_sentiment.c3"]
+        },
+        "mnist": {
+            "type": "executable",
+            "sources": [@METAPHOR_SOURCES@, "examples/mnist.c3"]
+        },
         "mnist_cuda": {
             "type": "executable",
             "sources": [@METAPHOR_SOURCES@, "src/device/cuda_device/**", "examples/mnist_cuda.c3"]

@@ -21,7 +21,6 @@ import metaphor::tensor;
 import metaphor::nn::loss;
 import metaphor::nn::optimizer;
 import metaphor::rtti;
-import metaphor::settings;
 import metaphor::tensor::tensor_core;
 import metaphor::utils::dataset;
 import metaphor::utils::sampling;
@@ -34,7 +33,6 @@ import std::time;
 
 alias Tensor = tensor::Tensor;
 alias DeviceReference = device_reference::DeviceReference;
-alias TransferDirection = device_reference::TransferDirection;
 alias HostDevice = host_device::HostDevice;
 alias CudaDevice = cuda_device::CudaDevice;
 alias Datatype = rtti::Datatype;
@@ -107,13 +105,13 @@ fn MnistModel build_model(DeviceReference dev)
 
 	// === Forward Pass Graph ===
 
-	Tensor z0 = input.matmul(w0)!!.add(b0)!!.stable();
+	Tensor z0 = (input.matmul(w0)!! + b0).stable();
 	Tensor a0 = z0.relu()!!;
 
-	Tensor z1 = a0.matmul(w1)!!.add(b1)!!;
+	Tensor z1 = a0.matmul(w1)!! + b1;
 	Tensor a1 = z1.relu()!!;
 
-	Tensor logits = a1.matmul(w2)!!.add(b2)!!;
+	Tensor logits = a1.matmul(w2)!! + b2;
 
 	// === Loss ===
 	Tensor loss_t = loss::softmax_cross_entropy(logits, target)!!;
@@ -130,21 +128,7 @@ fn MnistModel build_model(DeviceReference dev)
 }
 
 // ============================================================================
-// Data feeding (host-to-device)
-// ============================================================================
-
-fn void feed_data_htod(DeviceReference dev, Tensor t, float[] data)
-{
-	char[] gpu_bytes = t.value_bytes();
-	assert(gpu_bytes.len > 0, "feed_data_htod: tensor has no data");
-	usz copy_bytes = data.len * float.sizeof;
-	assert(copy_bytes <= gpu_bytes.len, "feed_data_htod: data too large");
-	char[] host_bytes = ((char*)data.ptr)[:copy_bytes];
-	dev.mem_transfer(host_bytes, gpu_bytes, TransferDirection.HTOD);
-}
-
-// ============================================================================
-// Accuracy computation (with DtoH transfer)
+// Accuracy computation
 // ============================================================================
 
 fn usz count_correct(float[] predictions, float[] labels, usz batch_size, usz num_classes)
@@ -178,33 +162,23 @@ fn usz count_correct(float[] predictions, float[] labels, usz batch_size, usz nu
 	return correct;
 }
 
-fn float compute_accuracy(MnistModel* model, DatasetReader* reader, DeviceReference dev)
+fn float compute_accuracy(MnistModel* model, DatasetReader* reader)
 {
 	usz correct = 0;
 	usz total = 0;
-	graph::Graph* g = graph::get();
-
-	// Host buffer for DtoH transfer of logits
-	float[BATCH_SIZE * OUTPUT_DIM] host_logits;
-	usz logit_bytes = BATCH_SIZE * OUTPUT_DIM * float.sizeof;
-	char[] host_logit_buf = ((char*)&host_logits)[:logit_bytes];
 
 	reader.reset();
 	while (dataset::Batch* batch = reader.next())
 	{
-		feed_data_htod(dev, model.input, batch.images);
-		g.advance_generation();
+		model.input.set(batch.images);
 		model.logits.collect()!!;
 
-		dev.sync();
+		float[BATCH_SIZE * OUTPUT_DIM] logit_buf;
+		model.logits.get(&logit_buf);
+		float* lp = &logit_buf[0];
 
-		// Transfer logits from GPU to host
-		char[] gpu_logit_bytes = model.logits.value_bytes();
-		dev.mem_transfer(gpu_logit_bytes, host_logit_buf, TransferDirection.DTOH);
-
-		usz logit_count = batch.size * (usz)OUTPUT_DIM;
 		correct += count_correct(
-			host_logits[:logit_count],
+			lp[:BATCH_SIZE * OUTPUT_DIM],
 			batch.labels,
 			batch.size,
 			(usz)OUTPUT_DIM);
@@ -276,11 +250,6 @@ fn void main()
 	usz num_batches = train_reader.num_batches();
 	io::printfn("Training batches: %d\n", num_batches);
 
-	graph::Graph* g = graph::get();
-
-	// Disable op tracking after model construction — remaining ops are data transfers
-	settings::track_ops = false;
-
 	// Use stable persistence so backward pass can reuse forward intermediates.
 	graph::set_default_persistence(tensor_core::Persistence.STABLE);
 
@@ -302,9 +271,8 @@ fn void main()
 		train_reader.reset();
 		while (dataset::Batch* batch = train_reader.next())
 		{
-			feed_data_htod(dev, model.input, batch.images);
-			feed_data_htod(dev, model.target, batch.labels);
-			g.advance_generation();
+			model.input.set(batch.images);
+			model.target.set(batch.labels);
 
 			Clock step_clock = time::clock::now();
 			model.loss_tensor.collect()!!;
@@ -317,12 +285,8 @@ fn void main()
 			epoch_backward_ns += step_clock.mark();
 		}
 
-		// Read loss at end of epoch via DtoH transfer
-		char[] gpu_loss_bytes = model.loss_tensor.value_bytes();
-		float[1] host_loss;
-		char[] host_loss_buf = ((char*)&host_loss)[:float.sizeof];
-		dev.mem_transfer(gpu_loss_bytes[:float.sizeof], host_loss_buf, TransferDirection.DTOH);
-		epoch_loss = host_loss[0];
+		// Read loss at end of epoch
+		model.loss_tensor.get(&epoch_loss);
 
 		NanoDuration epoch_ns = epoch_clock.mark();
 		double epoch_ms = ns_to_ms(epoch_ns);
@@ -365,18 +329,15 @@ fn void main()
 	io::printfn("  Backward:  %8.3f ms (%5.1f%%)", bwd_ms / n, bwd_ms / total_step_ms * 100.0);
 	io::printfn("  Total:     %8.3f ms", total_step_ms / n);
 
-	// Restore op tracking for evaluation
-	settings::track_ops = true;
-
 	// Evaluation
 	io::printfn("\nEvaluation...");
 
 	Clock eval_clock = time::clock::now();
-	float train_acc = compute_accuracy(&model, &train_reader, dev);
+	float train_acc = compute_accuracy(&model, &train_reader);
 	double eval_train_ms = ns_to_ms(eval_clock.mark());
 
 	eval_clock = time::clock::now();
-	float test_acc = compute_accuracy(&model, &test_reader, dev);
+	float test_acc = compute_accuracy(&model, &test_reader);
 	double eval_test_ms = ns_to_ms(eval_clock.mark());
 
 	io::printfn("  Train accuracy: %.2f%% (n=%d) [%.1f ms]",
