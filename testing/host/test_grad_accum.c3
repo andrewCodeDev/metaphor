@@ -25,8 +25,7 @@ import std::math;
 ///   Total: [4+6, 4+6] = [10, 10]
 fn void grad_accum_diamond() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 

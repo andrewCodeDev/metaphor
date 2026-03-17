@@ -28,8 +28,7 @@ fn bool approx_eq(float a, float b)
 
 fn void test_softmax_pipeline_uniform() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -52,8 +51,7 @@ fn void test_softmax_pipeline_uniform() @test
 
 fn void test_softmax_pipeline_sums_to_one() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -73,8 +71,7 @@ fn void test_softmax_pipeline_sums_to_one() @test
 
 fn void test_softmax_pipeline_monotone() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -92,8 +89,7 @@ fn void test_softmax_pipeline_monotone() @test
 
 fn void test_softmax_pipeline_numerical_stability() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -118,8 +114,7 @@ fn void test_softmax_pipeline_numerical_stability() @test
 
 fn void test_log_softmax_pipeline() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -151,8 +146,7 @@ fn void test_log_softmax_pipeline() @test
 
 fn void test_mean_pipeline() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -170,8 +164,7 @@ fn void test_mean_pipeline() @test
 
 fn void test_sum_all_pipeline() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -189,8 +182,7 @@ fn void test_sum_all_pipeline() @test
 
 fn void test_mean_2d() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -213,8 +205,7 @@ fn void test_mean_2d() @test
 
 fn void test_linear_no_bias() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -241,8 +232,7 @@ fn void test_linear_no_bias() @test
 
 fn void test_linear_with_bias() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -272,8 +262,7 @@ fn void test_linear_with_bias() @test
 
 fn void test_mse_loss_zero() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -293,8 +282,7 @@ fn void test_mse_loss_zero() @test
 
 fn void test_mse_loss_nonzero() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -316,8 +304,7 @@ fn void test_mse_loss_nonzero() @test
 
 fn void test_mse_loss_values() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -343,8 +330,7 @@ fn void test_mse_loss_values() @test
 
 fn void test_softmax_cross_entropy() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -368,8 +354,7 @@ fn void test_softmax_cross_entropy() @test
 
 fn void test_softmax_cross_entropy_perfect() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -390,8 +375,7 @@ fn void test_softmax_cross_entropy_perfect() @test
 
 fn void test_softmax_cross_entropy_wrong() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -416,8 +400,7 @@ fn void test_softmax_cross_entropy_wrong() @test
 
 fn void test_weighted_softmax_cross_entropy() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -456,8 +439,7 @@ fn void test_weighted_softmax_cross_entropy() @test
 
 fn void test_weighted_softmax_cross_entropy_zero_weight_ignores_wrong() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -492,8 +474,7 @@ fn void test_weighted_softmax_cross_entropy_zero_weight_ignores_wrong() @test
 
 fn void test_weighted_softmax_cross_entropy_zero_weight_ignores_perfect() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -526,8 +507,7 @@ fn void test_weighted_softmax_cross_entropy_zero_weight_ignores_perfect() @test
 
 fn void test_weighted_softmax_ce_matches_unweighted_with_uniform() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -561,8 +541,7 @@ fn void test_weighted_softmax_ce_matches_unweighted_with_uniform() @test
 
 fn void test_l2_normalize() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -582,8 +561,7 @@ fn void test_l2_normalize() @test
 
 fn void test_zscore_normalize() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 

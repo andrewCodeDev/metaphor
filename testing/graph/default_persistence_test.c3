@@ -27,8 +27,7 @@ alias Graph = graph::Graph;
 /// Uses matmul to prevent fusion — each matmul gets its own execution unit.
 fn void test_auto_promotion_unstable_mode() @test
 {
-	host_device::HostDevice cpu;
-	cpu.init();
+	host_device::HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	device_reference::DeviceReference dev = cpu.reference();
 
@@ -53,8 +52,7 @@ fn void test_auto_promotion_unstable_mode() @test
 /// In stable mode, intermediate tensors should be promoted to STABLE.
 fn void test_auto_promotion_stable_mode() @test
 {
-	host_device::HostDevice cpu;
-	cpu.init();
+	host_device::HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	device_reference::DeviceReference dev = cpu.reference();
 
@@ -82,8 +80,7 @@ fn void test_auto_promotion_stable_mode() @test
 
 fn void test_user_unstable_in_stable_mode() @test
 {
-	host_device::HostDevice cpu;
-	cpu.init();
+	host_device::HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	device_reference::DeviceReference dev = cpu.reference();
 
@@ -111,8 +108,7 @@ fn void test_user_unstable_in_stable_mode() @test
 
 fn void test_user_stable_survives_unstable_mode() @test
 {
-	host_device::HostDevice cpu;
-	cpu.init();
+	host_device::HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	device_reference::DeviceReference dev = cpu.reference();
 
@@ -140,8 +136,7 @@ fn void test_user_stable_survives_unstable_mode() @test
 
 fn void test_unstable_intermediate_freed_in_stable_mode() @test
 {
-	host_device::HostDevice cpu;
-	cpu.init();
+	host_device::HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	device_reference::DeviceReference dev = cpu.reference();
 

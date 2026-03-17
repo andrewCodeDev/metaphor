@@ -25,8 +25,7 @@ fn bool approx_eq(float a, float b)
 
 fn void test_unary_chain_cos_sin_neg_exp_relu() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -67,8 +66,7 @@ fn void test_unary_chain_cos_sin_neg_exp_relu() @test
 
 fn void test_binary_diff_of_squares() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -101,8 +99,7 @@ fn void test_binary_diff_of_squares() @test
 
 fn void test_exp_neg() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -131,8 +128,7 @@ fn void test_exp_neg() @test
 
 fn void test_sigmoid_composition() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 

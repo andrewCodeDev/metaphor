@@ -34,8 +34,7 @@ const graph::Flags CSE_FLAGS = {
 
 fn void test_same_add_returns_same_tensor() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -54,8 +53,7 @@ fn void test_same_add_returns_same_tensor() @test
 
 fn void test_same_mul_returns_same_tensor() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -74,8 +72,7 @@ fn void test_same_mul_returns_same_tensor() @test
 
 fn void test_different_ops_return_different_tensors() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -99,8 +96,7 @@ fn void test_different_ops_return_different_tensors() @test
 
 fn void test_chain_with_cse() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -129,8 +125,7 @@ fn void test_chain_with_cse() @test
 
 fn void test_same_unary_returns_same_tensor() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -148,8 +143,7 @@ fn void test_same_unary_returns_same_tensor() @test
 
 fn void test_different_unary_returns_different_tensors() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -172,8 +166,7 @@ fn void test_different_unary_returns_different_tensors() @test
 
 fn void test_cached_tensor_correct_values() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -209,8 +202,7 @@ fn void test_cached_tensor_correct_values() @test
 
 fn void test_cache_stats_tracking() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -236,8 +228,7 @@ fn void test_cache_stats_tracking() @test
 
 fn void test_cse_disabled_returns_different_tensors() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 

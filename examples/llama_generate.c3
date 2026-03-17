@@ -1408,7 +1408,7 @@ fn void main(String[] args) @if(!$feature(LLAMA_CHAT_MODE) && !$feature(LLAMA_SE
 		return;
 	}
 
-	HipDevice gpu = hip_device::hip_device_create({ .device_id = 0 });
+	HipDevice gpu = hip_device::create();
 	defer gpu.deinit();
 
 	DeviceReference dev = gpu.reference();

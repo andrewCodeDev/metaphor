@@ -30,8 +30,7 @@ fn bool approx_eq(float a, float b)
 
 fn void test_large_add_chain() @test
 {
-	host_device::HostDevice cpu;
-	cpu.init();
+	host_device::HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	device_reference::DeviceReference dev = cpu.reference();
 
@@ -78,8 +77,7 @@ fn void test_large_add_chain() @test
 
 fn void test_deep_binary_tree() @test
 {
-	host_device::HostDevice cpu;
-	cpu.init();
+	host_device::HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	device_reference::DeviceReference dev = cpu.reference();
 
@@ -127,8 +125,7 @@ fn void test_deep_binary_tree() @test
 
 fn void test_shallow_single_unit() @test
 {
-	host_device::HostDevice cpu;
-	cpu.init();
+	host_device::HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	device_reference::DeviceReference dev = cpu.reference();
 
@@ -162,8 +159,7 @@ fn void test_shallow_single_unit() @test
 
 fn void test_depth_two_correctness() @test
 {
-	host_device::HostDevice cpu;
-	cpu.init();
+	host_device::HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	device_reference::DeviceReference dev = cpu.reference();
 

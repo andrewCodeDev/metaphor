@@ -1076,7 +1076,7 @@ fn void main(String[] args)
 		return;
 	}
 
-	CudaDevice gpu = cuda_device::cuda_device_create({ .device_id = 0 });
+	CudaDevice gpu = cuda_device::create();
 	defer gpu.deinit();
 
 	DeviceReference dev = gpu.reference();

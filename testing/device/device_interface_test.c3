@@ -19,8 +19,7 @@ import std::math;
 
 fn void test_mem_fill_f32() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -38,8 +37,7 @@ fn void test_mem_fill_f32() @test
 
 fn void test_mem_fill_f64() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -57,8 +55,7 @@ fn void test_mem_fill_f64() @test
 
 fn void test_mem_fill_zero() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -83,8 +80,7 @@ fn void test_mem_fill_zero() @test
 
 fn void test_mem_dupe_f32() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -109,8 +105,7 @@ fn void test_mem_dupe_f32() @test
 
 fn void test_mem_dupe_empty() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -125,8 +120,7 @@ fn void test_mem_dupe_empty() @test
 
 fn void test_mem_sequence_f32() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -146,8 +140,7 @@ fn void test_mem_sequence_f32() @test
 
 fn void test_mem_sequence_f64() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -165,8 +158,7 @@ fn void test_mem_sequence_f64() @test
 
 fn void test_mem_sequence_negative_step() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -185,8 +177,7 @@ fn void test_mem_sequence_negative_step() @test
 fn void test_mem_fill_via_sequence() @test
 {
 	// mem_fill delegates to mem_sequence(value, 0) — verify equivalence
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -211,8 +202,7 @@ fn void test_mem_fill_via_sequence() @test
 
 fn void test_mem_cast_f32_to_f64() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -234,8 +224,7 @@ fn void test_mem_cast_f32_to_f64() @test
 
 fn void test_mem_cast_f64_to_f32() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -261,8 +250,7 @@ fn void test_mem_cast_f64_to_f32() @test
 
 fn void test_mem_equal_exact_match() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -283,8 +271,7 @@ fn void test_mem_equal_exact_match() @test
 
 fn void test_mem_equal_exact_mismatch() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -306,8 +293,7 @@ fn void test_mem_equal_exact_mismatch() @test
 
 fn void test_mem_equal_approx_within_tolerance() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -326,8 +312,7 @@ fn void test_mem_equal_approx_within_tolerance() @test
 
 fn void test_mem_equal_approx_outside_tolerance() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -345,8 +330,7 @@ fn void test_mem_equal_approx_outside_tolerance() @test
 
 fn void test_mem_equal_different_lengths() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -359,8 +343,7 @@ fn void test_mem_equal_different_lengths() @test
 
 fn void test_mem_equal_f64_approx() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -382,8 +365,7 @@ fn void test_mem_equal_f64_approx() @test
 
 fn void test_argmax_basic() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -399,8 +381,7 @@ fn void test_argmax_basic() @test
 
 fn void test_argmax_first_element() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -416,8 +397,7 @@ fn void test_argmax_first_element() @test
 
 fn void test_argmax_last_element() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -433,8 +413,7 @@ fn void test_argmax_last_element() @test
 
 fn void test_argmax_f64() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -454,8 +433,7 @@ fn void test_argmax_f64() @test
 
 fn void test_sample_returns_valid_token() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -485,8 +463,7 @@ fn void test_sample_returns_valid_token() @test
 
 fn void test_sample_low_temperature_favors_max() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 

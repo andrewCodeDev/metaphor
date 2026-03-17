@@ -430,8 +430,7 @@ fn void save_checkpoint(NamedParam[] named_params, char[] path)
 
 fn void main()
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 
 	DeviceReference dev = cpu.reference();
 

@@ -198,8 +198,7 @@ fn double ns_to_ms(NanoDuration ns)
 
 fn void main()
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 

@@ -183,7 +183,7 @@ fn Tensor? prefill_layer(Tensor x, Tensor q_proj, Tensor k_proj, Tensor v_proj, 
 
 fn int main()
 {
-	hip_device::HipDevice gpu = hip_device::hip_device_create({ .device_id = 0 });
+	hip_device::HipDevice gpu = hip_device::create();
 	DeviceReference dev = gpu.reference();
 	Datatype dt = Datatype.BF16;
 	double eps = 1e-5;

@@ -15,8 +15,7 @@ alias DeviceReference = device_reference::DeviceReference;
 
 fn void test_no_mutation_skips() @test
 {
-	host_device::HostDevice cpu;
-	cpu.init();
+	host_device::HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -48,8 +47,7 @@ fn void test_no_mutation_skips() @test
 
 fn void test_mutation_triggers_recompute() @test
 {
-	host_device::HostDevice cpu;
-	cpu.init();
+	host_device::HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -94,8 +92,7 @@ fn void test_mutation_triggers_recompute() @test
 
 fn void test_selective_recompute() @test
 {
-	host_device::HostDevice cpu;
-	cpu.init();
+	host_device::HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 

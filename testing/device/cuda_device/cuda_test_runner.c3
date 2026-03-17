@@ -24,7 +24,7 @@ import std::io;
 
 fn int main()
 {
-	cuda_device::CudaDevice gpu = cuda_device::cuda_device_create({ .device_id = 0 });
+	cuda_device::CudaDevice gpu = cuda_device::create();
 	device_reference::DeviceReference dev = gpu.reference();
 
 	io::printn("Running basic ops tests...");

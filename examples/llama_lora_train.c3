@@ -280,7 +280,7 @@ fn void main(String[] args)
 	tcfg = parse_args(args)!!;
 
 	// --- Device ---
-	hip_device::HipDevice gpu = hip_device::hip_device_create({ .device_id = 0 });
+	hip_device::HipDevice gpu = hip_device::create();
 	defer gpu.deinit();
 	device_reference::DeviceReference dev = gpu.reference();
 

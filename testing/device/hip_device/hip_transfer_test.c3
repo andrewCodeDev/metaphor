@@ -22,8 +22,7 @@ const float TOL = 1e-5;
 
 fn void test_transfer_dtoh(DeviceReference gpu_dev)
 {
-	host_device::HostDevice cpu;
-	cpu.init();
+	host_device::HostDevice cpu = host_device::create();
 	DeviceReference host_dev = cpu.reference();
 
 	graph::@subgraph()
@@ -51,8 +50,7 @@ fn void test_transfer_dtoh(DeviceReference gpu_dev)
 
 fn void test_transfer_htod(DeviceReference gpu_dev)
 {
-	host_device::HostDevice cpu;
-	cpu.init();
+	host_device::HostDevice cpu = host_device::create();
 	DeviceReference host_dev = cpu.reference();
 
 	graph::@subgraph()
@@ -101,8 +99,7 @@ fn void test_transfer_noop(DeviceReference gpu_dev)
 
 fn void test_transfer_dtoh_then_compute(DeviceReference gpu_dev)
 {
-	host_device::HostDevice cpu;
-	cpu.init();
+	host_device::HostDevice cpu = host_device::create();
 	DeviceReference host_dev = cpu.reference();
 
 	graph::@subgraph()

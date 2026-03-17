@@ -78,7 +78,7 @@ fn Tensor? apply_rope_batched(Tensor x, Tensor cos_pos, Tensor sin_pos)
 
 fn int main()
 {
-	hip_device::HipDevice gpu = hip_device::hip_device_create({ .device_id = 0 });
+	hip_device::HipDevice gpu = hip_device::create();
 	DeviceReference dev = gpu.reference();
 	Datatype dt = Datatype.BF16;
 

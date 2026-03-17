@@ -27,8 +27,7 @@ fn bool approx_eq(float a, float b)
 
 fn void test_slice_first_half() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -53,8 +52,7 @@ fn void test_slice_first_half() @test
 
 fn void test_slice_second_half() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -78,8 +76,7 @@ fn void test_slice_second_half() @test
 
 fn void test_slice_with_step() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -103,8 +100,7 @@ fn void test_slice_with_step() @test
 
 fn void test_slice_2d() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -132,8 +128,7 @@ fn void test_slice_2d() @test
 
 fn void test_slice_then_compute() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -162,8 +157,7 @@ fn void test_slice_then_compute() @test
 
 fn void test_transpose_2d() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -191,8 +185,7 @@ fn void test_transpose_2d() @test
 
 fn void test_cat_1d() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -217,8 +210,7 @@ fn void test_cat_1d() @test
 
 fn void test_cat_2d_dim0() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -248,8 +240,7 @@ fn void test_cat_2d_dim0() @test
 
 fn void test_cat_2d_dim1() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -280,8 +271,7 @@ fn void test_cat_2d_dim1() @test
 
 fn void test_cat_three_tensors() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -310,8 +300,7 @@ fn void test_cat_three_tensors() @test
 
 fn void test_stack_1d_dim0() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -340,8 +329,7 @@ fn void test_stack_1d_dim0() @test
 
 fn void test_stack_1d_dim1() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -366,8 +354,7 @@ fn void test_stack_1d_dim1() @test
 
 fn void test_stack_2d_dim0() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -399,8 +386,7 @@ fn void test_stack_2d_dim0() @test
 
 fn void test_stack_three_tensors() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -435,8 +421,7 @@ fn void test_stack_three_tensors() @test
 
 fn void test_unsqueeze() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -463,8 +448,7 @@ fn void test_unsqueeze() @test
 
 fn void test_squeeze() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -493,8 +477,7 @@ fn void test_squeeze() @test
 
 fn void test_gather_1d() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 

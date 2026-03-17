@@ -277,12 +277,11 @@ fn void main(String[] args)
 
 	// --- Device ---
 	$if USE_CUDA:
-		cuda_device::CudaDevice gpu = cuda_device::cuda_device_create({ .device_id = 0 });
+		cuda_device::CudaDevice gpu = cuda_device::create();
 		defer gpu.deinit();
 		device_reference::DeviceReference dev = gpu.reference();
 	$else
-		host_device::HostDevice cpu;
-		cpu.init();
+		host_device::HostDevice cpu = host_device::create();
 		defer cpu.deinit();
 		device_reference::DeviceReference dev = cpu.reference();
 	$endif

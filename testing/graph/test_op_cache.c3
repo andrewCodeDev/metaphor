@@ -20,8 +20,7 @@ import std::core::mem::allocator;
 
 fn void test_cache_miss_returns_null() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -43,8 +42,7 @@ fn void test_cache_miss_returns_null() @test
 
 fn void test_cache_hit_returns_tensor() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -71,8 +69,7 @@ fn void test_cache_hit_returns_tensor() @test
 
 fn void test_same_inputs_different_op_is_miss() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -99,8 +96,7 @@ fn void test_same_inputs_different_op_is_miss() @test
 
 fn void test_same_op_different_inputs_is_miss() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -132,8 +128,7 @@ fn void test_same_op_different_inputs_is_miss() @test
 
 fn void test_different_input_order_is_miss() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -160,8 +155,7 @@ fn void test_different_input_order_is_miss() @test
 
 fn void test_same_tensor_twice_is_hit() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -191,8 +185,7 @@ fn void test_same_tensor_twice_is_hit() @test
 
 fn void test_different_params_is_miss() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -221,8 +214,7 @@ fn void test_different_params_is_miss() @test
 
 fn void test_same_params_is_hit() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -254,8 +246,7 @@ fn void test_same_params_is_hit() @test
 
 fn void test_stats_tracks_hits_misses() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -290,8 +281,7 @@ fn void test_stats_tracks_hits_misses() @test
 
 fn void test_clear_resets_cache() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 

@@ -23,8 +23,7 @@ fn bool approx_eq(float a, float b)
 
 fn void test_reshape_1d_to_2d() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -51,8 +50,7 @@ fn void test_reshape_1d_to_2d() @test
 
 fn void test_reshape_2d_to_3d() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -78,8 +76,7 @@ fn void test_reshape_2d_to_3d() @test
 
 fn void test_reshape_3d_to_1d() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -108,8 +105,7 @@ fn void test_reshape_3d_to_1d() @test
 
 fn void test_reshape_identity() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -137,8 +133,7 @@ fn void test_reshape_identity() @test
 
 fn void test_reshape_stable() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -172,8 +167,7 @@ fn void test_reshape_stable() @test
 
 fn void test_reshape_chain() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -203,8 +197,7 @@ fn void test_reshape_chain() @test
 
 fn void test_reshape_gradient_basic() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -236,8 +229,7 @@ fn void test_reshape_gradient_basic() @test
 
 fn void test_reshape_gradient_chain() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -275,8 +267,7 @@ fn void test_reshape_gradient_chain() @test
 
 fn void test_reshape_gradient_with_multiply() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 

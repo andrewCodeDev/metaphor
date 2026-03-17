@@ -26,8 +26,7 @@ fn bool approx_eq(float a, float b)
 
 fn void test_sum_all() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -51,8 +50,7 @@ fn void test_sum_all() @test
 
 fn void test_sum_axis0() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -79,8 +77,7 @@ fn void test_sum_axis0() @test
 
 fn void test_sum_axis1() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -106,8 +103,7 @@ fn void test_sum_axis1() @test
 
 fn void test_mean_all() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -133,8 +129,7 @@ fn void test_mean_all() @test
 
 fn void test_sum_3x4_all() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -155,8 +150,7 @@ fn void test_sum_3x4_all() @test
 
 fn void test_sum_3x4_axis0() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -180,8 +174,7 @@ fn void test_sum_3x4_axis0() @test
 
 fn void test_sum_3x4_axis1() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -208,8 +201,7 @@ fn void test_sum_3x4_axis1() @test
 
 fn void test_mean_3x4() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -235,8 +227,7 @@ fn void test_mean_3x4() @test
 
 fn void test_ellipsis_reduce_last_axis() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -265,8 +256,7 @@ fn void test_ellipsis_reduce_last_axis() @test
 
 fn void test_ellipsis_reduce_backward() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 

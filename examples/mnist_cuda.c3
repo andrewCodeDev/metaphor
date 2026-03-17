@@ -201,11 +201,10 @@ fn double ns_to_ms(NanoDuration ns)
 fn void main()
 {
 	// Initialize devices
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 
-	CudaDevice gpu = cuda_device::cuda_device_create({ .device_id = 0 });
+	CudaDevice gpu = cuda_device::create();
 	defer gpu.deinit();
 	DeviceReference dev = gpu.reference();
 

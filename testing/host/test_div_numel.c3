@@ -22,8 +22,7 @@ import std::math;
 /// mean = sum / count = 3.5
 fn void? div_numel_mean()
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 

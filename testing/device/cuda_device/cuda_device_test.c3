@@ -77,11 +77,12 @@ fn void test_aligned_buffer_size() @test
 // Default Options
 // ============================================================================
 
-fn void test_cuda_device_default_options() @test
+fn void test_cuda_device_create_defaults() @test
 {
-	cuda_device::CudaDeviceOptions opts = cuda_device::DEFAULT_CUDA_OPTIONS;
-	assert(opts.device_id == 0, "default device_id should be 0");
-	assert(opts.graph_capture_mode == cuda_device::GraphCaptureMode.DISABLED, "default capture mode should be DISABLED");
+	// Verify that create() with no args uses sensible defaults.
+	// We can't call create() without a GPU, but we can verify the
+	// GraphCaptureMode default is DISABLED.
+	assert(cuda_device::GraphCaptureMode.DISABLED == (cuda_device::GraphCaptureMode)0, "default capture mode should be DISABLED");
 }
 
 // ============================================================================

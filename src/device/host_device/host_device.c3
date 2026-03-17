@@ -23,10 +23,6 @@ import metaphor::utils::sampling;
 import std::math;
 import std::core::mem;
 
-// Constants
-
-const usz DEFAULT_POOL_SIZE = 1024 * 1024 * 1024;  // 1 GB
-
 // HostDevice
 
 struct HostDevice (Device)
@@ -35,22 +31,14 @@ struct HostDevice (Device)
 	jit_cache::JitCache{kernel_cache::CachedKernel} jit_kernel_cache;
 }
 
-struct Options
-{
-	usz pool_size;
-}
-
-const Options DEFAULT_OPTIONS = {
-	.pool_size = DEFAULT_POOL_SIZE,
-};
-
 // Lifecycle
 
-fn HostDevice* HostDevice.init(&self, Options opts = DEFAULT_OPTIONS)
-{
-	self.cache.init(opts.pool_size)!!;
-	self.jit_kernel_cache.init();
-	return self;
+// TODO: Make CachingAllocator lazily initializable so create() doesn't need to assert.
+fn HostDevice create(usz pool_size = 1024 * 1024 * 1024) {
+	HostDevice dev;
+	dev.cache.init(pool_size)!!;
+	dev.jit_kernel_cache.init();
+	return dev;
 }
 
 fn void HostDevice.deinit(&self)

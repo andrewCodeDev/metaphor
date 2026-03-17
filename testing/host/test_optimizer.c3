@@ -30,8 +30,7 @@ fn bool approx_eq(float a, float b)
 /// Expected: 1.0 - 0.5 * 0.1 = 0.95
 fn void test_sgd_basic_update() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -65,8 +64,7 @@ fn void test_sgd_basic_update() @test
 /// Step 2: grad = 0.5 → param = 0.9 - 0.1 * 0.5 = 0.85
 fn void test_sgd_multiple_steps() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -103,8 +101,7 @@ fn void test_sgd_multiple_steps() @test
 /// SGD with LR step decay scheduler.
 fn void test_sgd_with_scheduler() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -145,8 +142,7 @@ fn void test_sgd_with_scheduler() @test
 /// Adam basic update: param should decrease when given positive gradient.
 fn void test_adam_basic_update() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -176,8 +172,7 @@ fn void test_adam_basic_update() @test
 /// the update magnitude should grow (bias correction effect).
 fn void test_adam_bias_correction() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -219,8 +214,7 @@ fn void test_adam_bias_correction() @test
 /// Adam numerical stability: random-ish gradients shouldn't produce NaN.
 fn void test_adam_numerical_stability() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -261,8 +255,7 @@ fn void test_adam_numerical_stability() @test
 /// Multiple parameters with different shapes should all be updated.
 fn void test_optimizer_multiple_params() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -331,8 +324,7 @@ fn void test_lr_schedulers() @test
 /// Global gradient clipping should scale gradients when total norm exceeds max.
 fn void test_global_gradient_clipping() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -374,8 +366,7 @@ fn void test_global_gradient_clipping() @test
 /// Expected: param unchanged after 3 steps, then param = 1.0 - 0.5 * 0.4 = 0.8 after 4th.
 fn void test_sgd_grad_accumulation() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -415,8 +406,7 @@ fn void test_sgd_grad_accumulation() @test
 /// The accumulated gradient should cause the param to decrease after 4 steps.
 fn void test_adam_grad_accumulation() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -448,8 +438,7 @@ fn void test_adam_grad_accumulation() @test
 /// Verify grad_accum_interval=0 produces identical results to default.
 fn void test_grad_accum_disabled_unchanged() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 

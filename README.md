@@ -25,18 +25,17 @@ Device setup — same code structure for any backend:
 
 ```c3
 // Host (CPU)
-host_device::HostDevice cpu;
-cpu.init();
+host_device::HostDevice cpu = host_device::create();
 defer cpu.deinit();
 DeviceReference dev = cpu.reference();
 
 // CUDA (NVIDIA GPU)
-cuda_device::CudaDevice gpu = cuda_device::cuda_device_create({ .device_id = 0 });
+cuda_device::CudaDevice gpu = cuda_device::create();
 defer gpu.deinit();
 DeviceReference dev = gpu.reference();
 
 // HIP (AMD GPU)
-hip_device::HipDevice gpu = hip_device::hip_device_create({ .device_id = 0 });
+hip_device::HipDevice gpu = hip_device::create();
 defer gpu.deinit();
 DeviceReference dev = gpu.reference();
 ```

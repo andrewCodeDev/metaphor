@@ -76,8 +76,7 @@ const usz NUM_EPOCHS = 20;
 
 fn void main()
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 

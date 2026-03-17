@@ -31,8 +31,7 @@ macro void @check_values(float* actual, float[] expected, $msg)
 
 fn void test_matmul_basic() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -80,8 +79,7 @@ fn void test_matmul_basic() @test
 
 fn void test_matmul_square() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -152,8 +150,7 @@ fn void test_matmul_square() @test
 
 fn void test_relu() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -189,8 +186,7 @@ fn void test_relu() @test
 
 fn void test_sigmoid() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -226,8 +222,7 @@ fn void test_sigmoid() @test
 
 fn void test_tanh() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -263,8 +258,7 @@ fn void test_tanh() @test
 
 fn void test_sum_all() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -299,8 +293,7 @@ fn void test_sum_all() @test
 
 fn void test_sum_axis0() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -334,8 +327,7 @@ fn void test_sum_axis0() @test
 
 fn void test_sum_axis1() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -369,8 +361,7 @@ fn void test_sum_axis1() @test
 
 fn void test_mean_all() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -407,8 +398,7 @@ fn void test_mean_all() @test
 
 fn void test_broadcast_add_row() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -455,8 +445,7 @@ fn void test_broadcast_add_row() @test
 
 fn void test_broadcast_mul_scalar() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 

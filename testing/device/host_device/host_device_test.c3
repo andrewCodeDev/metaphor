@@ -18,8 +18,7 @@ import metaphor::rtti;
 
 fn void test_host_device_init_deinit() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 
 	DeviceReference dev = cpu.reference();
@@ -28,8 +27,7 @@ fn void test_host_device_init_deinit() @test
 
 fn void test_host_device_mem_alloc_free() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 
 	DeviceReference dev = cpu.reference();
@@ -47,8 +45,7 @@ fn void test_host_device_mem_alloc_free() @test
 
 fn void test_host_device_mem_copy() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 
 	DeviceReference dev = cpu.reference();
@@ -81,8 +78,7 @@ fn void test_host_device_mem_copy() @test
 
 fn void test_tensor_on_host_device() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 
 	DeviceReference dev = cpu.reference();
@@ -104,8 +100,7 @@ fn void test_tensor_on_host_device() @test
 
 fn void test_tensor_data_accessible() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 
 	DeviceReference dev = cpu.reference();
@@ -134,8 +129,7 @@ fn void test_tensor_data_accessible() @test
 
 fn void test_multiple_tensors_on_host() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 
 	DeviceReference dev = cpu.reference();

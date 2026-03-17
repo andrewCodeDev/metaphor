@@ -23,8 +23,7 @@ const float TOL = 1e-5;
 /// grad(a) should be [1, 1, 1], grad(b) should be [0, 0]
 fn void test_cat_grad_partial() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -70,8 +69,7 @@ fn void test_cat_grad_partial() @test
 /// grad(a) should be all zeros, grad(b) should be [1, 1]
 fn void test_cat_2d_grad_partial() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -115,8 +113,7 @@ fn void test_cat_2d_grad_partial() @test
 /// grad(a) should be [1, 1], grad(b) should be [0, 0]
 fn void test_stack_grad_partial() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 

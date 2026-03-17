@@ -21,8 +21,7 @@ fn bool approx_eq(float a, float b, float tol = TOLERANCE)
 
 fn void test_dropout_zeros_fraction() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -51,8 +50,7 @@ fn void test_dropout_zeros_fraction() @test
 
 fn void test_dropout_inverted_scaling() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -81,8 +79,7 @@ fn void test_dropout_inverted_scaling() @test
 
 fn void test_dropout_preserves_expected_value() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -108,8 +105,7 @@ fn void test_dropout_preserves_expected_value() @test
 
 fn void test_dropout_p_zero_is_identity() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -131,8 +127,7 @@ fn void test_dropout_p_zero_is_identity() @test
 
 fn void test_dropout_different_calls_different_masks() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -165,8 +160,7 @@ fn void test_dropout_different_calls_different_masks() @test
 
 fn void test_dropout_rebuilding_graph_changes_mask() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -200,8 +194,7 @@ fn void test_dropout_rebuilding_graph_changes_mask() @test
 
 fn void test_dropout_backward_same_mask() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 

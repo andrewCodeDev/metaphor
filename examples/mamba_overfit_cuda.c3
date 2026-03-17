@@ -352,8 +352,7 @@ fn Tensor? layer_forward(MambaLayer* layer, Tensor x, DeviceReference dev)
 
 fn void main()
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 
 	DeviceReference dev = cpu.reference();
 

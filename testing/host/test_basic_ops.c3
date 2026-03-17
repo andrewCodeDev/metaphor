@@ -25,8 +25,7 @@ fn bool approx_eq(float a, float b)
 
 fn void test_add_basic() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -57,8 +56,7 @@ fn void test_add_basic() @test
 
 fn void test_sub_basic() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -88,8 +86,7 @@ fn void test_sub_basic() @test
 
 fn void test_mul_basic() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -119,8 +116,7 @@ fn void test_mul_basic() @test
 
 fn void test_div_basic() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -150,8 +146,7 @@ fn void test_div_basic() @test
 
 fn void test_chain_add_mul_neg() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -186,8 +181,7 @@ fn void test_chain_add_mul_neg() @test
 
 fn void test_neg() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -210,8 +204,7 @@ fn void test_neg() @test
 
 fn void test_exp() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -233,8 +226,7 @@ fn void test_exp() @test
 
 fn void test_abs() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -261,8 +253,7 @@ fn void test_abs() @test
 
 fn void test_add_2d() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -293,8 +284,7 @@ fn void test_add_2d() @test
 
 fn void test_constant_ops() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 

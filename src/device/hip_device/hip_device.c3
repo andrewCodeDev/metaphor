@@ -223,26 +223,13 @@ struct HipDevice
 	jit_cache::JitCache{types::KernelHandle} jit_kernel_cache;
 }
 
-// Options
-
-struct HipDeviceOptions
-{
-	uint device_id;
-	GraphCaptureMode graph_capture_mode;
-}
-
-const HipDeviceOptions DEFAULT_HIP_OPTIONS = {
-	.device_id = 0,
-	.graph_capture_mode = GraphCaptureMode.DISABLED,
-};
-
 // Lifecycle
 
-fn HipDevice hip_device_create(HipDeviceOptions opts) {
+fn HipDevice create(uint device_id = 0, GraphCaptureMode graph_capture_mode = DISABLED) {
 	HipDevice dev = {
-		.handle = hip_device_init(opts.device_id),
-		.device_id = opts.device_id,
-		.graph_capture_mode = opts.graph_capture_mode,
+		.handle = hip_device_init(device_id),
+		.device_id = device_id,
+		.graph_capture_mode = graph_capture_mode,
 	};
 	dev.jit_kernel_cache.init();
 	return dev;

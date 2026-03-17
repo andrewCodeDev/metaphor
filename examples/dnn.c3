@@ -105,8 +105,7 @@ fn DnnModel dnn_init(Tensor input, DeviceReference dev)
 
 fn void main()
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 

@@ -5,8 +5,7 @@ The device layer provides a uniform interface for memory management and operatio
 ## Host Device (CPU)
 
 ```c3
-HostDevice cpu;
-cpu.init();
+HostDevice cpu = host_device::create();
 defer cpu.deinit();
 DeviceReference dev = cpu.reference();
 ```
@@ -16,7 +15,7 @@ Host memory can be accessed directly. No transfers needed for `set()`/`get()` â€
 ## CUDA Device (NVIDIA GPU)
 
 ```c3
-CudaDevice gpu = cuda_device::cuda_device_create({ .device_id = 0 });
+CudaDevice gpu = cuda_device::create();
 defer gpu.deinit();
 DeviceReference dev = gpu.reference();
 ```
@@ -71,15 +70,14 @@ A model built on one device runs on any other by changing only the device initia
 
 From `examples/mnist.c3` (CPU):
 ```c3
-HostDevice cpu;
-cpu.init();
+HostDevice cpu = host_device::create();
 DeviceReference dev = cpu.reference();
 MnistModel model = build_model(dev);
 ```
 
 From `examples/mnist_cuda.c3` (GPU) â€” same `build_model`, different device:
 ```c3
-CudaDevice gpu = cuda_device::cuda_device_create({ .device_id = 0 });
+CudaDevice gpu = cuda_device::create();
 DeviceReference dev = gpu.reference();
 MnistModel model = build_model(dev);
 ```

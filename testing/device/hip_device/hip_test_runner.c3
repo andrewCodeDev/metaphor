@@ -24,7 +24,7 @@ import std::io;
 
 fn int main()
 {
-	hip_device::HipDevice gpu = hip_device::hip_device_create({ .device_id = 0 });
+	hip_device::HipDevice gpu = hip_device::create();
 	device_reference::DeviceReference dev = gpu.reference();
 
 	io::printn("Running HIP basic ops tests...");

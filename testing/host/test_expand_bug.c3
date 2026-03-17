@@ -23,8 +23,7 @@ import std::math;
 ///   grad(x) should be [3, 3, 3, 3]
 fn void expand_reduce_gradient() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 

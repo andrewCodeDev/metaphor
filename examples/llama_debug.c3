@@ -1292,7 +1292,7 @@ fn void main(String[] args)
 		return;
 	}
 
-	HipDevice gpu = hip_device::hip_device_create({ .device_id = 0 });
+	HipDevice gpu = hip_device::create();
 	defer gpu.deinit();
 
 	DeviceReference dev = gpu.reference();

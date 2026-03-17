@@ -221,26 +221,13 @@ struct CudaDevice
 	jit_cache::JitCache{types::KernelHandle} jit_kernel_cache;
 }
 
-// Options
-
-struct CudaDeviceOptions
-{
-	uint device_id;
-	GraphCaptureMode graph_capture_mode;
-}
-
-const CudaDeviceOptions DEFAULT_CUDA_OPTIONS = {
-	.device_id = 0,
-	.graph_capture_mode = GraphCaptureMode.DISABLED,
-};
-
 // Lifecycle
 
-fn CudaDevice cuda_device_create(CudaDeviceOptions opts) {
+fn CudaDevice create(uint device_id = 0, GraphCaptureMode graph_capture_mode = DISABLED) {
 	CudaDevice dev = {
-		.handle = cuda_device_init(opts.device_id),
-		.device_id = opts.device_id,
-		.graph_capture_mode = opts.graph_capture_mode,
+		.handle = cuda_device_init(device_id),
+		.device_id = device_id,
+		.graph_capture_mode = graph_capture_mode,
 	};
 	dev.jit_kernel_cache.init();
 	return dev;

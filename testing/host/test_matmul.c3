@@ -25,8 +25,7 @@ fn bool approx_eq(float a, float b)
 
 fn void test_matmul_2x3_3x4() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -72,8 +71,7 @@ fn void test_matmul_2x3_3x4() @test
 
 fn void test_matmul_square() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
@@ -106,8 +104,7 @@ fn void test_matmul_square() @test
 
 fn void test_matmul_identity() @test
 {
-	HostDevice cpu;
-	cpu.init();
+	HostDevice cpu = host_device::create();
 	defer cpu.deinit();
 	DeviceReference dev = cpu.reference();
 
