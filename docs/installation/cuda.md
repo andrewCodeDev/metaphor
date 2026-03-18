@@ -1,4 +1,4 @@
-# Metaphor — CUDA Installation (NVIDIA GPUs)
+# Metaphor: CUDA Installation (NVIDIA GPUs)
 
 This guide covers the additional dependencies needed to build Metaphor with CUDA support. **Complete the [base installation](base.md) first.**
 
@@ -22,7 +22,7 @@ Everything from the [base installation](base.md), plus:
 Follow NVIDIA's official instructions for your distro version:
 
 ```bash
-# Example for Ubuntu 22.04/24.04 — check https://developer.nvidia.com/cuda-downloads for current instructions
+# Example for Ubuntu 22.04/24.04; see https://developer.nvidia.com/cuda-downloads for current instructions
 sudo apt install nvidia-cuda-toolkit
 ```
 
@@ -91,8 +91,8 @@ cmake -B build -DGPU_BACKEND=cuda -DCUDA_LOG_LEVEL=1
 ## Verify
 
 A successful build produces:
-- `build/metaphor.a` — C3 static library
-- `build/lib/libmetaphor_cuda.so` — CUDA shared library
+- `build/metaphor.a` (C3 static library)
+- `build/lib/libmetaphor_cuda.so` (CUDA shared library)
 
 ## Troubleshooting
 
@@ -104,5 +104,5 @@ A successful build produces:
 
 ## Next Steps
 
-- [Base installation](base.md) — host-only setup
-- [HIP/ROCm backend](hip.md) — for AMD GPUs
+- [Base installation](base.md)
+- [HIP/ROCm backend](hip.md)

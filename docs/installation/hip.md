@@ -1,4 +1,4 @@
-# Metaphor — HIP/ROCm Installation (AMD GPUs)
+# Metaphor: HIP/ROCm Installation (AMD GPUs)
 
 This guide covers the additional dependencies needed to build Metaphor with HIP/ROCm support. **Complete the [base installation](base.md) first.**
 
@@ -60,10 +60,10 @@ cmake --build build -j$(nproc)
 ```
 
 Adjust `AMDGPU_TARGETS` to match your GPU architecture:
-- **gfx1100** — RDNA3 (RX 7900 XTX, W7900, etc.)
-- **gfx1030** — RDNA2 (RX 6800/6900 series)
-- **gfx90a** — CDNA2 (MI210, MI250)
-- **gfx942** — CDNA3 (MI300)
+- **gfx1100**: RDNA3 (RX 7900 XTX, W7900, etc.)
+- **gfx1030**: RDNA2 (RX 6800/6900 series)
+- **gfx90a**: CDNA2 (MI210, MI250)
+- **gfx942**: CDNA3 (MI300)
 
 Check your GPU's architecture with:
 
@@ -99,9 +99,9 @@ cmake -B build -DGPU_BACKEND=hip -DHIP_LOG_LEVEL=1
 ## Verify
 
 A successful build produces:
-- `build/metaphor.a` — C3 static library
-- `build/lib/libmetaphor_hip.so` — HIP shared library
-- `build/lib/libhiptensor.so` — hipTensor (copied from third_party build)
+- `build/metaphor.a` (C3 static library)
+- `build/lib/libmetaphor_hip.so` (HIP shared library)
+- `build/lib/libhiptensor.so` (hipTensor, copied from third_party build)
 
 ## Troubleshooting
 
@@ -115,5 +115,5 @@ A successful build produces:
 
 ## Next Steps
 
-- [Base installation](base.md) — host-only setup
-- [CUDA backend](cuda.md) — for NVIDIA GPUs
+- [Base installation](base.md)
+- [CUDA backend](cuda.md)

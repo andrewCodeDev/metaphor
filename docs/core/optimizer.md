@@ -6,7 +6,7 @@ The optimizer manages parameter updates during training. It holds global state (
 
 ### SGD
 
-From `examples/least_squares.c3` — simple linear regression with SGD:
+From `examples/least_squares.c3`, simple linear regression with SGD:
 
 ```c3
 Tensor[2] params = { weight, bias };
@@ -26,19 +26,19 @@ for (usz epoch = 0; epoch < 200; epoch++)
 
 ### Adam
 
-From `examples/mamba.c3` — LoRA training with per-group Adam options:
+From `examples/mamba.c3`, LoRA training with per-group Adam options:
 
 ```c3
 fn usz register_lora_params(LoRAMambaModel* model, Optimizer* opt)
 {
     usz count = 0;
 
-    // Embedding extension — custom betas
+    // Embedding extension, custom betas
     opt.adam({ model.embed_ext },
         { ...optimizer::DEFAULT_ADAM_OPTIONS, .beta1 = 0.6, .beta2 = 0.95, .clip_grad = 1.0 });
     count += 1;
 
-    // LoRA layers — register in reverse order (closest to loss first)
+    // LoRA layers, register in reverse order (closest to loss first)
     for (usz ri = 0; ri < model.num_layers; ri++)
     {
         usz i = model.num_layers - 1 - ri;
@@ -72,12 +72,12 @@ optimizer::Optimizer opt = optimizer::init({
 ```
 
 Available schedulers:
-- `scheduler_step(step_size, gamma)` — multiply LR by gamma every N steps
-- `scheduler_exponential(gamma)` — multiply LR by gamma every step
-- `scheduler_cosine(total_steps, min_lr)` — cosine annealing
-- `scheduler_linear_warmup(warmup_steps)` — linear ramp from 0 to base LR
-- `scheduler_warmup_cosine(warmup, total, min_lr)` — warmup then cosine
-- `scheduler_warmup_linear(warmup, total, min_lr)` — warmup then linear decay
+- `scheduler_step(step_size, gamma)`: multiply LR by gamma every N steps
+- `scheduler_exponential(gamma)`: multiply LR by gamma every step
+- `scheduler_cosine(total_steps, min_lr)`: cosine annealing
+- `scheduler_linear_warmup(warmup_steps)`: linear ramp from 0 to base LR
+- `scheduler_warmup_cosine(warmup, total, min_lr)`: warmup then cosine
+- `scheduler_warmup_linear(warmup, total, min_lr)`: warmup then linear decay
 
 The current LR is available via `opt.lr` after each step.
 
@@ -117,13 +117,4 @@ Each call to `step()` scales gradients by `1/N` and accumulates. Parameters only
 
 ## Mixed Precision
 
-When parameters are stored in half precision (BF16 or F16), the optimizer automatically maintains full-precision master weights and moment buffers. No user configuration needed — the device-specific factories detect the dtype and set up master weights.
-
-## Logging
-
-A typical training loop with full diagnostics, from `examples/mamba_lora_train.c3`:
-
-```c3
-io::printfn("%6d  loss=%.6f  lr=%.2e  ep_avg=%.4f  epoch=%d",
-    step, loss_val, opt.lr, ep_avg, epoch + 1);
-```
+When parameters are stored in half precision (BF16 or F16), the optimizer automatically maintains full-precision master weights and moment buffers. The device-specific factories detect the dtype and set up master weights.

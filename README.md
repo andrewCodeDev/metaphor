@@ -15,9 +15,9 @@ Tensors are lightweight handles. Operations on them produce graph nodes, not imm
 
 Metaphor supports three backends. The same model definition runs on any of them — see the installation guides for dependencies and build instructions:
 
-- [**Host**](docs/installation/base.md) — JIT-compiled kernels with BLAS acceleration (MKL/OpenBLAS)
-- [**CUDA**](docs/installation/cuda.md) — NVIDIA GPUs via cuTENSOR, cuDNN, and NVRTC
-- [**HIP**](docs/installation/hip.md) — AMD GPUs via ROCm, hipTENSOR, and runtime kernel compilation
+- [**Host**](docs/installation/base.md) - JIT-compiled kernels with BLAS acceleration (MKL/OpenBLAS)
+- [**CUDA**](docs/installation/cuda.md) - NVIDIA GPUs via cuTENSOR, cuDNN, and NVRTC
+- [**HIP**](docs/installation/hip.md) - AMD GPUs via ROCm, hipTENSOR, and runtime kernel compilation
 
 ## Snippets
 

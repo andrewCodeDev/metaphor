@@ -10,7 +10,7 @@ defer cpu.deinit();
 DeviceReference dev = cpu.reference();
 ```
 
-Host memory can be accessed directly. No transfers needed for `set()`/`get()` — they just copy bytes. The host device JIT-compiles fused kernels to shared libraries at `/tmp/metaphor/`.
+Host memory can be accessed directly. `set()` and `get()` copy bytes in place. The host device JIT-compiles fused kernels to shared libraries at `/tmp/metaphor/`.
 
 ## CUDA Device (NVIDIA GPU)
 
@@ -75,7 +75,7 @@ DeviceReference dev = cpu.reference();
 MnistModel model = build_model(dev);
 ```
 
-From `examples/mnist_cuda.c3` (GPU) — same `build_model`, different device:
+From `examples/mnist_cuda.c3` (GPU), same `build_model` with a different device:
 ```c3
 CudaDevice gpu = cuda_device::create();
 DeviceReference dev = gpu.reference();

@@ -8,7 +8,7 @@ Calling `.backward()` on a tensor walks the forward graph in reverse topological
 
 ```c3
 Tensor loss = loss::mse_loss(pred, target)!!.stable();
-loss.backward();   // builds gradient graph — no execution
+loss.backward();   // builds gradient graph, no execution
 ```
 
 After this call, every tensor in the forward graph that has `.enable_grad()` set will have a corresponding gradient tensor accessible via `.grad()`.
@@ -26,7 +26,7 @@ dw.collect()!!;
 optim.step();   // collects all registered parameter gradients, then applies updates
 ```
 
-See [optimizer.md](../core/optimizer.md) for the full optimizer API — SGD/Adam setup, learning rate scheduling, gradient clipping, and gradient accumulation across micro-batches.
+See [optimizer.md](../core/optimizer.md) for the full optimizer API: SGD/Adam setup, learning rate scheduling, gradient clipping, and gradient accumulation across micro-batches.
 
 ## Gradient Rules
 
@@ -41,11 +41,11 @@ Each operation type has a symbolic backward rule that constructs the gradient ex
 - **max/min (element-wise)**: `grad * heaviside(a - b)` (gradient flows to the selected input)
 - **reduce (sum)**: gradient is broadcast back to input shape
 
-These rules compose — the backward of a fused kernel is built from the chain of individual rules.
+These rules compose. The backward of a fused kernel is built from the chain of individual rules.
 
 ## Gradient Accumulation
 
-When multiple forward paths converge on the same tensor, their gradients are summed. This happens automatically during graph construction — no user intervention needed.
+When multiple forward paths converge on the same tensor, `.backward()` chains their gradients into a symbolic sum.
 
 ```c3
 // weight is used in two places
@@ -68,6 +68,6 @@ Tensor fine_tuned = frozen.matmul(adapter_weight)!!;
 
 ## Interaction with Persistence
 
-Gradient tensors inherit persistence from their forward counterparts. If a forward tensor is `STABLE`, its gradient is also promoted to `STABLE`. This matters because the backward pass needs forward activations to compute gradients — if a forward activation was freed (because it was `UNSTABLE`), the system automatically recomputes it.
+Gradient tensors inherit persistence from their forward counterparts. If a forward tensor is `STABLE`, its gradient is also promoted to `STABLE`. The backward pass needs forward activations to compute gradients. If a forward activation was freed because it was `UNSTABLE`, the system automatically recomputes it.
 
 See [persistence.md](../core/persistence.md) for the full tradeoff discussion.

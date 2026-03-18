@@ -1,6 +1,6 @@
-# Metaphor — Base Installation (Host-only)
+# Metaphor: Base Installation (Host-only)
 
-This guide covers the minimum dependencies needed to build and run Metaphor on CPU. This is the foundation for all backends — if you plan to use CUDA or HIP/ROCm, start here first.
+This guide covers the minimum dependencies needed to build and run Metaphor on CPU. Complete this before setting up a GPU backend.
 
 ## Prerequisites
 
@@ -68,7 +68,7 @@ sudo pacman -S openblas
 
 ### Option C: Apple Accelerate (macOS only)
 
-No installation needed — Accelerate is included with macOS. The build system detects it automatically.
+Accelerate is included with macOS. The build system detects it automatically.
 
 ## Install CMake
 
@@ -114,5 +114,5 @@ A successful build produces `build/metaphor.a`.
 
 ## Next Steps
 
-- [CUDA backend](cuda.md) — for NVIDIA GPUs
-- [HIP/ROCm backend](hip.md) — for AMD GPUs
+- [CUDA backend](cuda.md)
+- [HIP/ROCm backend](hip.md)

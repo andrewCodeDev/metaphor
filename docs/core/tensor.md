@@ -1,6 +1,6 @@
 # Tensor
 
-Tensor is a lightweight handle wrapping a pointer to a TensorCore. It is the primary user-facing type — you build computation graphs, access data, and control training through tensors.
+Tensor is a lightweight handle wrapping a pointer to a TensorCore. It is the primary user-facing type for building computation graphs, accessing data, and controlling training.
 
 Multiple handles can reference the same underlying core.
 
@@ -8,11 +8,11 @@ Multiple handles can reference the same underlying core.
 
 The API uses two type aliases to signal what an operation does:
 
-- **`GraphTensor`** (alias for `Tensor`) — a *new* tensor node was added to the computation graph. The returned handle points to a different core than the input. Operations like `matmul`, `relu`, `+`, `reshape` return `GraphTensor?`.
+- **`GraphTensor`** (alias for `Tensor`): a new tensor node was added to the computation graph. The returned handle points to a different core than the input. Operations like `matmul`, `relu`, `+`, `reshape` return `GraphTensor?`.
 
-- **`Self`** (alias for `Tensor`) — the *same* tensor, returned for method chaining. No graph node was created. Operations like `fill`, `enable_grad`, `set_label`, `stable` return `Self`.
+- **`Self`** (alias for `Tensor`): the same tensor, returned for method chaining. Operations like `fill`, `enable_grad`, `set_label`, `stable` return `Self`.
 
-Both are `Tensor` at runtime — the distinction is purely for readability in the API. If a method returns `GraphTensor`, the graph grew. If it returns `Self`, it didn't.
+Both are `Tensor` at runtime. The distinction is for readability in the API.
 
 ## Creating Tensors
 
@@ -34,11 +34,11 @@ Tensor w = tensor::random(F32, dev, { 784, 128 },
     RandType.NORMAL, kaiming_scale(784))!!.enable_grad();
 ```
 
-All factory functions return optionals — use `!!` to force-unwrap or `!` to rethrow.
+All factory functions return optionals. Use `!!` to force-unwrap or `!` to rethrow.
 
 ## Arithmetic
 
-Operator overloads work with tensors and scalars. Broadcasting is automatic. Note: operator overloading panics if an operation fails. If you need to catch a potentially failing operation, use the helper equivalent: `x.add(y)` instead of `x + y`.
+Operator overloads work with tensors and scalars. Broadcasting is automatic. Operator overloads panic on failure; the underlying `.add()`, `.sub()`, `.mul()`, `.div()` methods return optionals for error handling.
 
 ```c3
 Tensor z = input.matmul(weight)!! + bias;    // linear layer
@@ -46,8 +46,6 @@ Tensor scaled = scores * (1.0f / math::sqrt((float)d_k));
 Tensor residual = x + attention_output;
 Tensor mean_pooled = summed / (float)seq_len;
 ```
-
-The underlying `.add()`, `.sub()`, `.mul()`, `.div()` methods are still available.
 
 ## Activations and Element-wise Ops
 
@@ -89,7 +87,7 @@ Tensor output = attn.einsum(w_o, "bhsk,hkd->bsd")!!;
 
 ## Shape Operations
 
-`reshape`, `squeeze`, and `unsqueeze` are zero-copy — they create a new view of the same underlying data with different shape metadata. No memory is allocated or moved.
+`reshape`, `squeeze`, and `unsqueeze` are zero-copy views with different shape metadata.
 
 ```c3
 Tensor r = t.reshape({ 2, 3, 4 })!!;    // new shape, same data
@@ -102,23 +100,16 @@ Tensor g = table.gather(0, indices)!!;    // embedding lookup
 
 ### Slicing
 
-`.slice()` extracts a sub-tensor along one or more dimensions. Each dimension gets a `SliceRange` with `start`, `end`, and `step`. Defaults: `start = 0`, `end = 0` (meaning full extent), `step = 0` (meaning 1).
+`.slice()` extracts a sub-tensor along one or more dimensions. Each dimension gets a `SliceRange` with `start`, `end`, and `step`. Defaults: `start = 0`, `end = 0` (full extent), `step = 0` (1).
 
-The `offset` parameter skips leading dimensions — they're left as full-range implicitly. This avoids writing boilerplate `{ 0, 0, 1 }` entries for batch dimensions you don't care about.
+The `offset` parameter skips leading dimensions, leaving them as full-range implicitly.
 
-From `examples/llama_generate.c3` — splitting a tensor in half along dim 2:
+From `examples/llama_generate.c3`, splitting a tensor in half along dim 2:
 
 ```c3
 ulong half = x.shape().get(2) / 2;
 Tensor x1 = x.slice({ { 0, half, 1 } }, offset: 2)!;   // first half of dim 2
 Tensor x2 = x.slice({ { half, 0, 1 } }, offset: 2)!;    // second half (end=0 means full extent)
-```
-
-Without `offset`, you'd need to specify full-range entries for every preceding dimension:
-
-```c3
-// Equivalent but verbose — offset: 2 is cleaner
-Tensor x1 = x.slice({ { 0, 0, 1 }, { 0, 0, 1 }, { 0, half, 1 } })!;
 ```
 
 ## Data I/O
@@ -151,7 +142,7 @@ Both handle host-to-device and device-to-host transfers automatically.
 model.input.bind(batch.images);           // point at external buffer
 ```
 
-The tensor does not own the bound buffer. All three methods (`.set()`, `.fill()`, `.bind()`) automatically notify the graph for re-execution.
+The tensor does not own the bound buffer. `.set()`, `.fill()`, and `.bind()` all notify the graph for re-execution.
 
 ## Gradient Control
 
@@ -172,7 +163,7 @@ w.attach();           // resume gradient flow
 loss.collect()!!;     // compile + execute the full dependency chain
 ```
 
-Nothing executes until `.collect()` is called. See [graph.md](graph.md) for details on lazy execution.
+See [graph.md](graph.md) for details on lazy execution.
 
 ## Persistence
 

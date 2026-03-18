@@ -18,10 +18,10 @@ Four levels, lowest to highest:
 ## Marking Individual Tensors
 
 ```c3
-// .stable() — data survives across collect() calls
+// .stable(): data survives across collect() calls
 Tensor loss = loss::mse_loss(pred, target)!!.stable();
 
-// .unstable() — data freed after last consumer
+// .unstable(): data freed after last consumer
 Tensor mid = a.matmul(b)!!.unstable();
 ```
 
@@ -36,7 +36,7 @@ graph::set_default_persistence(STABLE);    // preserve intermediates
 graph::set_default_persistence(UNSTABLE);  // free after last consumer (default)
 ```
 
-Only `STABLE` and `UNSTABLE` are valid defaults — `NONE` and `LEAF` are structural properties set per-tensor.
+Only `STABLE` and `UNSTABLE` are valid defaults. `NONE` and `LEAF` are structural properties set per-tensor.
 
 ### Unstable mode (default)
 
@@ -46,7 +46,7 @@ Intermediates are freed after their last consumer finishes. You opt in to keepin
 
 Intermediates are preserved indefinitely. You opt in to freeing tensors with `.unstable()`. This eliminates recomputation and works naturally for stateful models where caches and hidden states must persist between steps, but it holds all intermediates in memory simultaneously.
 
-Both modes produce identical numerical results. The choice is purely a memory-versus-compute tradeoff.
+Both modes produce identical numerical results. The choice is a memory-versus-compute tradeoff.
 
 ## How Persistence Interacts with Training
 
@@ -54,17 +54,15 @@ In a training loop, the forward pass produces activations that the backward pass
 
 **Stable mode** (simpler, more memory): all forward activations survive, backward pass reads them directly.
 
-**Unstable mode** (less memory, more compute): forward activations are freed, backward pass recomputes them from their inputs. This is automatic — the execution system detects missing data and re-executes the forward subgraph.
+**Unstable mode** (less memory, more compute): forward activations are freed, backward pass recomputes them from their inputs. The execution system detects missing data and re-executes the forward subgraph automatically.
 
 ## How Persistence Interacts with Compilation
 
-The compiler uses persistence boundaries to decide where to split computation into separate kernels. Two adjacent operations where the intermediate is `NONE` can be fused into a single kernel. An intermediate marked `UNSTABLE` or higher forces a kernel boundary — the first kernel writes the result to memory, the second kernel reads it.
-
-This means persistence affects performance even when memory isn't a concern. Over-marking tensors as `STABLE` can prevent fusion opportunities. Under-marking can cause excessive recomputation.
+The compiler uses persistence boundaries to decide where to split computation into separate kernels. Two adjacent operations where the intermediate is `NONE` can be fused into a single kernel. An intermediate marked `UNSTABLE` or higher forces a kernel boundary: the first kernel writes the result to memory, and the second kernel reads it.
 
 ## LEAF Persistence
 
-Tensors created with `tensor::empty()`, `tensor::zeros()`, or other factory functions are automatically promoted to `LEAF`. Leaf data is never freed by the system — the user owns it.
+Tensors created with `tensor::empty()`, `tensor::zeros()`, or other factory functions are automatically promoted to `LEAF`. The system does not free leaf data.
 
 The mutation tracking system (fingerprinting) only operates on LEAF tensors. When a leaf's data changes via `.set()`, `.bind()`, or `.fill()`, the graph is notified and downstream computations re-execute.
 
@@ -76,6 +74,6 @@ Subgraphs inherit the default persistence from their parent graph. This means a 
 
 | Scenario | Recommended mode | Why |
 |----------|-----------------|-----|
-| Small models, overfitting demos | STABLE | Simplest; memory isn't a concern |
+| Small models, overfitting demos | STABLE | Simplest, fits in memory easily |
 | Large model training | UNSTABLE + selective `.stable()` | Minimize peak memory |
 | Inference / generation | UNSTABLE + selective `.stable()` | State tensors (KV cache) must persist |

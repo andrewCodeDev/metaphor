@@ -4,16 +4,16 @@ The graph is Metaphor's central coordinator. It owns all tensors, tracks their o
 
 ## Lifecycle
 
-The global graph initializes automatically on first use — no setup required. All tensor operations implicitly use it. For isolated computation scopes, use `@subgraph()` (see below).
+The global graph initializes automatically on first use. All tensor operations implicitly use it. For isolated computation scopes, use `@subgraph()` (see below).
 
 ## Lazy Execution
 
-No operation produces data at registration time. Each operation records a semantic description — what to compute, not how. Data materializes only on `.collect()`.
+No operation produces data at registration time. Each operation records a semantic description of the computation. Data materializes only on `.collect()`.
 
-From `examples/dnn.c3` — the entire forward pass builds a lazy graph:
+From `examples/dnn.c3`, the entire forward pass builds a lazy graph:
 
 ```c3
-// None of this executes yet — just records operations
+// None of this executes yet; just records operations
 Tensor z0 = input.matmul(w0)!! + b0;
 Tensor a0 = z0.relu()!!;
 Tensor z1 = a0.matmul(w1)!! + b1;
@@ -29,7 +29,7 @@ If no compiled kernel exists for the target tensor, the device compiler produces
 
 ## Backward Pass
 
-`backward()` walks the forward graph in reverse and registers gradient computation nodes. It does not execute them — gradients are lazy tensors like everything else.
+`backward()` walks the forward graph in reverse and registers gradient computation nodes. Gradients are lazy tensors and only execute on `.collect()`.
 
 From `examples/least_squares.c3`:
 
@@ -41,7 +41,7 @@ Tensor mse = loss::mse_loss(pred, target)!!.stable();
 // Build backward graph (no execution yet)
 mse.backward();
 
-// Training loop — forward + backward execute on collect + step
+// Training loop: forward + backward execute on collect + step
 for (usz epoch = 0; epoch < NUM_EPOCHS; epoch++)
 {
     // set your input tensors with new data //
@@ -51,7 +51,7 @@ for (usz epoch = 0; epoch < NUM_EPOCHS; epoch++)
 }
 ```
 
-Gradient tensors are ordinary tensors — they participate in fusion, have their own compute chains, and can themselves be differentiated.
+Gradient tensors are ordinary tensors. They participate in fusion, have their own compute chains, and can themselves be differentiated.
 
 ## Persistence
 
@@ -66,7 +66,7 @@ The graph uses fingerprint-based tracking to avoid redundant re-execution. When 
 `.set()`, `.bind()`, and `.fill()` all call `notify_leaf_mutation()` internally:
 
 ```c3
-// .set() notifies automatically — downstream ops will re-execute
+// .set() notifies automatically; downstream ops will re-execute
 input_ids.set(token_data);
 target.set(label_data);
 loss.collect()!!;    // picks up new input values
@@ -79,17 +79,17 @@ When data is modified through raw pointers (e.g., the optimizer updating weights
 ```c3
 mse.collect()!!;
 optim.step();
-// Optimizer wrote weights via raw pointers — graph doesn't know
+// Optimizer wrote weights via raw pointers; graph doesn't know
 graph::notify_mutation(input);
 ```
-Only LEAF tensors can be mutation points. To update a non-leaf node, you can collect it first and then collect any tensor downstream of it.
+Only LEAF tensors can be mutation points. Updating a non-leaf requires collecting it first, then collecting any tensor downstream of it.
 
 ## Data I/O
 
 ### Writing data into tensors
 
 ```c3
-// Fixed array — copies into tensor, notifies graph
+// Fixed array: copies into tensor, notifies graph
 float[4] data = { 1.0, 2.0, 3.0, 4.0 };
 tensor.set(data);
 
@@ -116,7 +116,7 @@ Both `set()` and `get()` handle host-to-device and device-to-host transfers auto
 
 ### Binding external buffers (zero-copy)
 
-From `examples/mnist.c3` — bind dataset batch directly:
+From `examples/mnist.c3`, bind dataset batch directly:
 
 ```c3
 while (dataset::Batch* batch = train_reader.next())
@@ -128,7 +128,7 @@ while (dataset::Batch* batch = train_reader.next())
 }
 ```
 
-`.bind()` points the tensor at an external buffer without copying. Automatically notifies the graph.
+`.bind()` points the tensor at an external buffer without copying and notifies the graph.
 
 ## Subgraph Isolation
 
