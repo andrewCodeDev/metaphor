@@ -247,7 +247,7 @@ fn ExecutionSequence* ExecutionSequence.init(&self, Allocator alloc)
 
 fn void ExecutionSequence.destroy_all_units(&self)
 {
-	swisstable::SwissTableValueIterator {uptr, ExecutionUnit*} it = self.target_to_unit_map.value_iter();
+	var it @safeinfer = self.target_to_unit_map.value_iter();
 	while (try unit = it.next())
 	{
 		// Free GPU data for the target tensor. Only execution sequence
@@ -410,7 +410,7 @@ fn void ExecutionSequence.restore_tensor(&self, TensorCorePtr core) @private
 fn void ExecutionSequence.free_offload_buffers(&self) @private
 {
 	// Iterate over all offload buffer entries and free CPU memory
-	swisstable::SwissTableIterator {uptr, OffloadBuffer} it = self.offload_buffers.iter();
+	var it @safeinfer = self.offload_buffers.iter();
 	while (try entry = it.next())
 	{
 		if (entry.value.len > 0)
@@ -481,7 +481,7 @@ fn ExecutionUnit* ExecutionSequence.append(
 fn void ExecutionSequence.finalize_closures(&self)
 {
 	// First pass: compute consumers (inverse of direct_sources)
-	swisstable::SwissTableValueIterator {uptr, ExecutionUnit*} it2 = self.target_to_unit_map.value_iter();
+	var it2 @safeinfer = self.target_to_unit_map.value_iter();
 	while (try consumer = it2.next())
 	{
 		for (usz s = 0; s < consumer.direct_sources.len; s++)
@@ -493,14 +493,14 @@ fn void ExecutionSequence.finalize_closures(&self)
 
 	// Third pass: register leaves and rebuild bit vectors.
 	// Clear old bitvecs — leaf count may have changed since last compile.
-	swisstable::SwissTableValueIterator {uptr, ExecutionUnit*} it_clear = self.target_to_unit_map.value_iter();
+	var it_clear @safeinfer = self.target_to_unit_map.value_iter();
 	while (try unit = it_clear.next())
 	{
 		unit.leaf_bits.clear();
 	}
 
 	// Discover and register all leaf source_cores.
-	swisstable::SwissTableValueIterator {uptr, ExecutionUnit*} it3 = self.target_to_unit_map.value_iter();
+	var it3 @safeinfer = self.target_to_unit_map.value_iter();
 	while (try unit = it3.next())
 	{
 		for (usz s = 0; s < unit.source_cores.len; s++)
@@ -516,7 +516,7 @@ fn void ExecutionSequence.finalize_closures(&self)
 	// Build bit vectors via DFS propagation.
 	// Each unit's leaf_bits = union of its direct leaf sources + union of its source units' leaf_bits.
 	// We use a recursive helper with memoization (leaf_bits.len > 0 means done).
-	swisstable::SwissTableValueIterator {uptr, ExecutionUnit*} it4 = self.target_to_unit_map.value_iter();
+	var it4 @safeinfer = self.target_to_unit_map.value_iter();
 	while (try unit = it4.next())
 	{
 		self.build_leaf_bits(unit);
@@ -592,7 +592,7 @@ fn void ExecutionSequence.execute_for_target(&self, TensorCorePtr core)
 	ExecutionUnit* root = (ExecutionUnit*)unit_opt;
 
 	// Reset ref counts for all units
-	swisstable::SwissTableValueIterator {uptr, ExecutionUnit*} it = self.target_to_unit_map.value_iter();
+	var it @safeinfer = self.target_to_unit_map.value_iter();
 	while (try unit = it.next())
 	{
 		unit.ref_count = { .count = 0, .visited = false };

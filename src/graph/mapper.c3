@@ -35,7 +35,7 @@ alias CompiledSet = hash_map::HashMap {uptr, bool};
 /// Returns IR entries in dependency order (deepest first).
 /// Uses temp allocator for arena-style allocation.
 fn cas::IREntry[] map_graph(
-	SymbolicChainMap* chain_map,
+	SymbolicSequence* seq,
 	tensor_core::TensorCore* root,
 	Graph* g,
 )
@@ -48,7 +48,7 @@ fn cas::IREntry[] map_graph(
 
 	cas::ExprBuilder builder = cas::expr_builder_init(tmem);
 
-	build_subgraph_ir(chain_map, root, &ir_list, &compiled, &builder, g);
+	build_subgraph_ir(seq, root, &ir_list, &compiled, &builder, g);
 
 	return ir_list.array_view();
 }
@@ -56,7 +56,7 @@ fn cas::IREntry[] map_graph(
 // build_subgraph_ir — recursive subgraph builder
 
 fn void build_subgraph_ir(
-	SymbolicChainMap* chain_map,
+	SymbolicSequence* seq,
 	tensor_core::TensorCore* tc,
 	IREntryList* ir_list,
 	CompiledSet* compiled,
@@ -70,33 +70,17 @@ fn void build_subgraph_ir(
 	// Already has execution unit from prior collect
 	if (g.has_execution_unit(tc)) return;
 
-	// Get iterator over ALL nodes in the chain
-	ChainIterator chain_iter;
-	if (try iter = chain_map.chain_iterator(tc, Direction.FWD))
-	{
-		chain_iter = iter;
-	}
-	else
-	{
-		return; // No chain = leaf tensor
-	}
+	// Look up the single node for this tensor (no node = leaf)
+	SymbolicNode*? node = seq.get(tc);
+	if (catch node) return;
 
 	device_reference::DeviceReference subgraph_device = tc.device;
 
 	TensorCoreList inputs_list;
 	inputs_list.tinit();
-	cas::Expr* base_expr = null;
 
-	for (SymbolicNode* node = chain_iter.next(); node != null; node = chain_iter.next())
-	{
-		cas::Expr* node_expr = walk(chain_map, tc, node, subgraph_device,
-			&inputs_list, ir_list, compiled, builder, g);
-		if (node_expr != null)
-		{
-			assert(base_expr == null, "Multiple operations on same tensor");
-			base_expr = node_expr;
-		}
-	}
+	cas::Expr* base_expr = walk(seq, tc, node, subgraph_device,
+		&inputs_list, ir_list, compiled, builder, g);
 
 	if (base_expr == null) return;
 
@@ -131,7 +115,7 @@ fn void build_subgraph_ir(
 // walk_child — process a child tensor to get its expression
 
 fn cas::Expr* walk_child(
-	SymbolicChainMap* chain_map,
+	SymbolicSequence* seq,
 	tensor_core::TensorCore* child,
 	device_reference::DeviceReference current_device,
 	TensorCoreList* inputs_list,
@@ -144,7 +128,7 @@ fn cas::Expr* walk_child(
 	// Different device? Compile separately, becomes input
 	if (!child.device.is_compatible(current_device))
 	{
-		build_subgraph_ir(chain_map, child, ir_list, compiled, builder, g);
+		build_subgraph_ir(seq, child, ir_list, compiled, builder, g);
 		add_input_if_new(inputs_list, child);
 		return builder.access(child, (cas::IndexId[]){}, false)!!;
 	}
@@ -159,29 +143,28 @@ fn cas::Expr* walk_child(
 	// Compilation boundary? Compile separately
 	if (child.is_compilation_boundary())
 	{
-		build_subgraph_ir(chain_map, child, ir_list, compiled, builder, g);
+		build_subgraph_ir(seq, child, ir_list, compiled, builder, g);
 		add_input_if_new(inputs_list, child);
 		return builder.access(child, (cas::IndexId[]){}, false)!!;
 	}
 
-	// Get first node for child
-	SymbolicNode* child_node = chain_map.get_first_node(child);
-	if (child_node == null)
+	// Get node for child — if none, it's a leaf
+	SymbolicNode*? child_node = seq.get(child);
+	if (catch child_node)
 	{
-		// Leaf
 		add_input_if_new(inputs_list, child);
 		return builder.access(child, (cas::IndexId[]){}, false)!!;
 	}
 
 	// Recurse into child
-	return walk(chain_map, child, child_node, current_device,
+	return walk(seq, child, child_node, current_device,
 		inputs_list, ir_list, compiled, builder, g);
 }
 
 // walk — main recursive traversal
 
 fn cas::Expr* walk(
-	SymbolicChainMap* chain_map,
+	SymbolicSequence* seq,
 	tensor_core::TensorCore* tc,
 	SymbolicNode* node,
 	device_reference::DeviceReference current_device,
@@ -197,18 +180,18 @@ fn cas::Expr* walk(
 	switch (tag)
 	{
 		case REDUCE:
-			return walk_reduce(chain_map, tc, node,
+			return walk_reduce(seq, tc, node,
 				inputs_list, ir_list, compiled, builder, g);
 
 		case EXPAND:
-			return walk_expand(chain_map, tc, node,
+			return walk_expand(seq, tc, node,
 				inputs_list, ir_list, compiled, builder, g);
 
 		case EINSUM:
 			operations::EinsumPayload* cp = &node.payload.einsum;
 			if (einsum_has_contractions(cp) || einsum_needs_index_aware_path(cp))
 			{
-				return walk_einsum_cutensor(chain_map, tc, node, current_device,
+				return walk_einsum_cutensor(seq, tc, node, current_device,
 					inputs_list, ir_list, compiled, builder, g, cp);
 			}
 			// Element-wise einsum (same indices) — fall through to generic path for chain fusion
@@ -235,7 +218,7 @@ fn cas::Expr* walk(
 			tensor::Tensor[] boundary_children = node.children.slice();
 			for (usz i = 0; i < boundary_children.len; i++)
 			{
-				build_subgraph_ir(chain_map, boundary_children[i].core(), ir_list, compiled, builder, g);
+				build_subgraph_ir(seq, boundary_children[i].core(), ir_list, compiled, builder, g);
 			}
 			tensor_core::TensorCore*[] boundary_inputs = allocator::alloc_array_try(tmem, tensor_core::TensorCore*, boundary_children.len)!!;
 			for (usz i = 0; i < boundary_children.len; i++)
@@ -266,7 +249,7 @@ fn cas::Expr* walk(
 
 	for (usz ci = 0; ci < children.len; ci++)
 	{
-		cas::Expr* child_expr = walk_child(chain_map, children[ci].core(), current_device,
+		cas::Expr* child_expr = walk_child(seq, children[ci].core(), current_device,
 			inputs_list, ir_list, compiled, builder, g);
 		child_exprs_buf[child_exprs_count] = child_expr;
 		child_exprs_count++;
@@ -435,7 +418,7 @@ fn cas::Expr* build_permute_expr(cas::ExprBuilder* builder, SymbolicNode* node, 
 // walk_einsum_cutensor — einsums routed to cuTENSOR (contractions, outer products, non-trivial broadcasts)
 
 fn cas::Expr* walk_einsum_cutensor(
-	SymbolicChainMap* chain_map,
+	SymbolicSequence* seq,
 	tensor_core::TensorCore* tc,
 	SymbolicNode* node,
 	device_reference::DeviceReference current_device,
@@ -452,7 +435,7 @@ fn cas::Expr* walk_einsum_cutensor(
 	// Compile all children first
 	for (usz i = 0; i < children.len; i++)
 	{
-		build_subgraph_ir(chain_map, children[i].core(), ir_list, compiled, builder, g);
+		build_subgraph_ir(seq, children[i].core(), ir_list, compiled, builder, g);
 	}
 
 	// Build a fresh builder for this contraction's IR entry
@@ -617,7 +600,7 @@ fn cas::Expr* walk_einsum_cutensor(
 // walk_reduce — reduction operations
 
 fn cas::Expr* walk_reduce(
-	SymbolicChainMap* chain_map,
+	SymbolicSequence* seq,
 	tensor_core::TensorCore* tc,
 	SymbolicNode* node,
 	TensorCoreList* inputs_list,
@@ -631,7 +614,7 @@ fn cas::Expr* walk_reduce(
 	assert(children.len > 0, "reduce node has no children");
 
 	tensor_core::TensorCore* child = children[0].core();
-	build_subgraph_ir(chain_map, child, ir_list, compiled, builder, g);
+	build_subgraph_ir(seq, child, ir_list, compiled, builder, g);
 
 	// Build a fresh builder for this reduce's IR entry
 	cas::ExprBuilder reduce_builder = cas::expr_builder_init(tmem);
@@ -758,7 +741,7 @@ fn cas::Expr* walk_reduce(
 // walk_expand — expand/broadcast operations (consistent IndexId handling)
 
 fn cas::Expr* walk_expand(
-	SymbolicChainMap* chain_map,
+	SymbolicSequence* seq,
 	tensor_core::TensorCore* tc,
 	SymbolicNode* node,
 	TensorCoreList* inputs_list,
@@ -772,7 +755,7 @@ fn cas::Expr* walk_expand(
 	assert(children.len > 0, "expand node has no children");
 
 	tensor_core::TensorCore* child = children[0].core();
-	build_subgraph_ir(chain_map, child, ir_list, compiled, builder, g);
+	build_subgraph_ir(seq, child, ir_list, compiled, builder, g);
 
 	// Build a fresh builder for this expand's IR entry
 	cas::ExprBuilder expand_builder = cas::expr_builder_init(tmem);

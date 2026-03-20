@@ -3,7 +3,7 @@
 //! Actual tensor storage owned by the Graph. Contains shape, dtype, device
 //! reference, and format-specific storage (dense or sparse). Has flags for
 //! requires_grad, attached, alive, and persistence. Leaf detection is structural:
-//! tensors with no entry in symbolic_chain_map are leaves.
+//! tensors with no entry in the symbolic sequence are leaves.
 //!
 
 module metaphor::tensor::tensor_core;

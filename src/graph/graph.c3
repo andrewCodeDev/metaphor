@@ -1,7 +1,7 @@
 //! Graph
 //!
 //! Central coordinator that owns all TensorCores, tracks operations via
-//! symbolic chain maps, and manages gradients. Single source of truth for
+//! the symbolic sequence, and manages gradients. Single source of truth for
 //! the computation. Operations build the graph lazily; collect() triggers
 //! compilation and execution.
 //!
@@ -40,6 +40,14 @@ alias DataRefcountMap = hash_map::HashMap {uptr, uint};
 alias SymbolicNodePool = stable_free_list::StableFreeList {SymbolicNode};
 alias TensorCorePool = stable_free_list::StableFreeList {tensor_core::TensorCore};
 alias GradientCoreMap = hash_map::HashMap {uptr, tensor_core::TensorCore*};
+
+// Direction — forward vs backward pass context
+
+enum Direction : char
+{
+	FWD,
+	BWD,
+}
 
 // Flags
 
@@ -294,7 +302,7 @@ struct Graph
 
 	// -- symbolic node internals --
 	SymbolicNodePool symbolic_node_pool;
-	SymbolicChainMap symbolic_chain_map;
+	SymbolicSequence symbolic_seq;
 
 	// -- gradient internals --
 	GradientCoreMap gradient_core_map;
@@ -334,7 +342,7 @@ fn Graph* Graph.init(&self, Allocator alloc, Flags flags = DEFAULT_FLAGS)
 	self.normalizer_flags = DEFAULT_NORMALIZER_FLAGS;
 	self.max_collect_depth = 16;
 	self.symbolic_node_pool.init(alloc);
-	self.symbolic_chain_map.init(alloc);
+	self.symbolic_seq.init(alloc);
 	self.tensor_pool.init(alloc);
 	self.data_refcounts.init(alloc);
 	self.gradient_core_map.init(alloc);
@@ -351,8 +359,7 @@ fn void Graph.deinit(&self)
 	// LEAFs are never exec targets (register_op asserts this), so weights/caches are safe.
 	// Exported tensors have data=null (export steals the pointer), so release_data() no-ops.
 	{
-		swisstable::SwissTableIterator {uptr, execution_sequence::ExecutionUnit*} it =
-			self.exec_seq.target_to_unit_map.iter();
+		var it @safeinfer = self.exec_seq.target_to_unit_map.iter();
 		while (try entry = it.next())
 		{
 			tensor_core::TensorCore* tc = (tensor_core::TensorCore*)entry.key;
@@ -362,7 +369,7 @@ fn void Graph.deinit(&self)
 
 	self.cse_cache.free();
 	self.exec_seq.free();
-	self.symbolic_chain_map.free();
+	self.symbolic_seq.free();
 	self.symbolic_node_pool.free();
 	self.gradient_core_map.free();
 	self.data_refcounts.free();
@@ -374,8 +381,7 @@ fn void Graph.deinit(&self)
 /// buffers and re-execute every op — useful for diagnosing stale-data bugs.
 fn void Graph.release_computed_data(&self)
 {
-	swisstable::SwissTableIterator {uptr, execution_sequence::ExecutionUnit*} it =
-		self.exec_seq.target_to_unit_map.iter();
+	var it @safeinfer = self.exec_seq.target_to_unit_map.iter();
 	while (try entry = it.next())
 	{
 		tensor_core::TensorCore* tc = (tensor_core::TensorCore*)entry.key;
@@ -390,7 +396,7 @@ fn void Graph.release_computed_data(&self)
 
 fn void Graph.reset(&self)
 {
-	self.symbolic_chain_map.clear_retaining_capacity();
+	self.symbolic_seq.clear_retaining_capacity();
 	self.symbolic_node_pool.reset();
 	self.exec_seq.clear_retaining_capacity();
 	self.cse_cache.clear();
@@ -535,7 +541,7 @@ fn void Graph.set_gradient_core(&self, tensor_core::TensorCore* core, tensor_cor
 }
 
 /// Collect all symbolic nodes reachable from a root tensor via DFS through children.
-fn usz collect_reachable_nodes(SymbolicChainMap* map, tensor_core::TensorCore* root, SymbolicNode*[] out)
+fn usz collect_reachable_nodes(SymbolicSequence* seq, tensor_core::TensorCore* root, SymbolicNode*[] out)
 {
 	usz count = 0;
 	list::List{tensor_core::TensorCore*} stack;
@@ -545,27 +551,24 @@ fn usz collect_reachable_nodes(SymbolicChainMap* map, tensor_core::TensorCore* r
 	{
 		tensor_core::TensorCore* tc = stack.pop()!!;
 
-		SymbolicChain* chain = map.lookup(tc);
-		if (chain == null) continue;
+		SymbolicNode*? node = seq.get(tc);
+		if (catch node) continue;
 
-		for (SymbolicNode* node = chain.first; node != null; node = node.next)
+		// Deduplicate
+		bool seen = false;
+		for (usz i = 0; i < count; i++)
 		{
-			// Deduplicate
-			bool seen = false;
-			for (usz i = 0; i < count; i++)
-			{
-				if (out[i] == node) { seen = true; break; }
-			}
-			if (seen) continue;
+			if (out[i] == node) { seen = true; break; }
+		}
+		if (seen) continue;
 
-			assert(count < out.len, "collect_reachable_nodes: buffer overflow");
-			out[count++] = node;
+		assert(count < out.len, "collect_reachable_nodes: buffer overflow");
+		out[count++] = node;
 
-			tensor::Tensor[] children = node.children.slice();
-			for (usz c = 0; c < children.len; c++)
-			{
-				stack.push(children[c].core());
-			}
+		tensor::Tensor[] children = node.children.slice();
+		for (usz c = 0; c < children.len; c++)
+		{
+			stack.push(children[c].core());
 		}
 	}
 
@@ -590,7 +593,7 @@ fn void Graph.backward(&self, tensor_core::TensorCore* loss)
 	defer self.direction = Direction.FWD;
 
 	// Collect only nodes reachable from the loss via DFS through children chains.
-	uint num_nodes = self.symbolic_chain_map.num_nodes();
+	uint num_nodes = self.symbolic_seq.num_nodes();
 	if (num_nodes == 0) return;
 
 	// Stack-allocate for small graphs, heap for large
@@ -610,7 +613,7 @@ fn void Graph.backward(&self, tensor_core::TensorCore* loss)
 	}
 	defer if (heap_allocated) { mem::free(buf.ptr); };
 
-	usz collected = collect_reachable_nodes(&self.symbolic_chain_map, loss, buf);
+	usz collected = collect_reachable_nodes(&self.symbolic_seq, loss, buf);
 
 	// Sort by seq descending (reverse topological order)
 	sort_nodes_descending(buf[:collected]);
@@ -687,12 +690,12 @@ fn void Graph.backward(&self, tensor_core::TensorCore* loss)
 				// Same tensor — skip
 				continue;
 			}
-			else if (!self.symbolic_chain_map.contains(existing_grad))
+			else if (!self.symbolic_seq.contains(existing_grad))
 			{
-				// Case 2: Gradient exists but has no computation chain.
-				// Created by x.grad() but never computed. Reassign chain.
+				// Case 2: Gradient exists but has no computation node.
+				// Created by x.grad() but never computed. Reassign node.
 				tensor_core::TensorCore* defunct = grad.core();
-				self.symbolic_chain_map.reassign_chain(defunct, existing_grad);
+				self.symbolic_seq.reassign(defunct, existing_grad);
 				if (child_core.flags.persistence.gte(tensor_core::Persistence.STABLE))
 				{
 					existing_grad.flags.persistence.promote(tensor_core::Persistence.STABLE);
@@ -836,8 +839,8 @@ fn void Graph.register_op(&self,
 	};
 	self.next_node_seq += 1;
 
-	// Add to chain map
-	self.symbolic_chain_map.put_append(node);
+	// Add to symbolic sequence
+	self.symbolic_seq.put(node);
 
 	// Track consumer counts
 	for (usz i = 0; i < args.len; i++)

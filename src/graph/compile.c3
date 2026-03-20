@@ -31,7 +31,7 @@ fn void compile_graph(Graph* g, tensor_core::TensorCore*[] observables)
 /// Compile a single tensor and all its dependencies.
 fn void compile_tensor(Graph* g, tensor_core::TensorCore* target)
 {
-	cas::IREntry[] irs = map_graph(&g.symbolic_chain_map, target, g);
+	cas::IREntry[] irs = map_graph(&g.symbolic_seq, target, g);
 
 	for (usz i = 0; i < irs.len; i++)
 	{

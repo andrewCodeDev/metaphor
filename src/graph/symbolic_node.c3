@@ -1,8 +1,7 @@
 //! Symbolic Node
 //!
 //! Represents a single symbolic operation in the computation graph.
-//! Links to other nodes targeting the same result tensor via prev/next
-//! pointers forming a doubly-linked chain per tensor.
+//! Each tensor has exactly one node, registered via SymbolicSequence.
 
 module metaphor::graph;
 import metaphor::tensor;
@@ -15,8 +14,6 @@ const usz CHILDREN_CAPACITY = 8;
 
 struct SymbolicNode
 {
-	SymbolicNode* prev;
-	SymbolicNode* next;
 	Children children;
 	op_payload::OpPayload payload;
 	Tensor result;
