@@ -315,7 +315,7 @@ fn void SwissTable.clear(&self)
 {
 	if (self.ctrl == null) return;
 	usz num_buckets = self.num_buckets();
-	mem::set(self.ctrl, CTRL_EMPTY, num_buckets + GROUP_WIDTH);
+	self.ctrl[:num_buckets + GROUP_WIDTH] = CTRL_EMPTY;
 	self.items = 0;
 	self.growth_left = bucket_mask_to_capacity(self.bucket_mask);
 }
@@ -478,7 +478,7 @@ fn void SwissTable.alloc_table(&self, usz num_buckets) @local
 	self.bucket_mask = num_buckets - 1;
 	self.growth_left = bucket_mask_to_capacity(self.bucket_mask);
 
-	mem::set(self.ctrl, CTRL_EMPTY, ctrl_size);
+	self.ctrl[:ctrl_size] = CTRL_EMPTY;
 }
 
 fn void SwissTable.grow(&self) @local
